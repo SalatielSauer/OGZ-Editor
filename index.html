@@ -1,0 +1,29 @@
+<html>
+	<head>
+		<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+		<link rel="stylesheet" type="text/css" href="style.css">
+		<title>OGZ Raw Editor</title>
+	</head>
+
+	<body>
+		<!-- <script src="https://bundle.run/buffer@5.4.3"></script> -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+		<!--<script src="https://cdn.jsdelivr.net/pako/1.0.3/pako.min.js"></script>-->
+		<script src="formatter.js"></script>
+		<script src="main.js"></script>
+		<!--<script src="pakogzip.js"></script>-->
+		<div id="errorlog" style="display: none;"></div>
+		<div id="container" style="display: inline-block; position: relative; width: 100%;">
+			<div id="errorlbl" style="display: none;"></div>
+			<textarea id="jsondata" spellcheck="false" onkeydown="pusherrorlbl(0)" onscroll="errorlbl.scrollTop = jsontextarea.scrollTop;" style="resize: none"></textarea>
+		</div>
+		<button onclick="readJSON()" class="btn">Write map data</button>
+		<a id="downloadbtn" class="btn" style="display: none">Download RAW</a>
+		<br>
+		<textarea id="mapdata" spellcheck="false" style="width: 30%; font-family: monospace; font-size: large;"></textarea>
+		<hr>
+		<p>For now you will have to compress the generated file using gzip to be able to open it in <a href="http://sauerbraten.org/" target="_blank">Sauerbraten</a>.<br>
+		Only entity spawn and some mapvars (strings only) are supported, feel free to <a href="https://github.com/SalatielSauer/OGZ-Editor" target="_blank">contribute</a> with new functions :)</p>
+		<p style="text-align: center; font-size: 13px"><a href="https://salatielsauer.github.io/" target="_blank">@SalatielSauer</a></p>
+	</body>
+</html>
