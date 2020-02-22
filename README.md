@@ -8,7 +8,7 @@ https://salatielsauer.github.io/OGZ-Editor/index.html
 - [x] Simple json syntax error catcher
 - [x] Light, Mapmodel, Playerstart, Envmap, Particles, Sound and Spotlight entities
 - [ ] Teleport, Teledest and pickups entities
-- [ ] Integer and String mapvars
+- [ ] Integer and Float mapvars
 - [ ] Textures
 - [ ] Octree editing
 - [ ] Materials
