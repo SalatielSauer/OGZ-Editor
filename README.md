@@ -15,5 +15,4 @@ https://salatielsauer.github.io/OGZ-Editor/index.html
 - [ ] Lightmaps
 - [ ] Blendmaps (unlikely)
 - [x] Concatenation and download
-- [ ] Change output data type to "data" instead of "ASCII Text"
-- [ ] Conversion of the output to a valid .ogz file directly
+- [x] Conversion of the output to a valid .ogz file directly

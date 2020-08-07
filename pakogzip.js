@@ -1,19 +1,8 @@
-//trying to generate a gzip-compressed file, useless for now
+//encodes plain text as hexadecimal and converts to .ogz using gzip
 
 var pako = window.pako;
 function compressRaw(rawogz){
-	gzipdata = pako.gzip(rawogz, { level: 6 });
+	var byteArray = new Uint8Array(rawogz.match(/.{2}/g).map(e => parseInt(e, 16)));
+	gzipdata = pako.gzip(byteArray);
 	download(gzipdata);
-	/*try {
-		gzipdata = pako.gzip(rawogz, { to: 'string' });
-	} finally {
-		ogzip = "";
-		try {
-			for (c = 0; c < gzipdata.length; c++){
-				ogzip += gzipdata.charCodeAt(c).toString(16);
-			}
-		} finally {
-			download(hexBtify(ogzip));
-		}
-	}*/
 }
