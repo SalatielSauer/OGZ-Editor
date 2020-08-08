@@ -1,10 +1,22 @@
-//OGZ Raw Editor by Salatiel
+// OGZ Editor by Salatiel
 
-jsontextarea = document.getElementById("jsondata");
+var jsontextarea = document.getElementById("jsondata");
 jsontextarea.value = '{\n"mapsize": 1024,\n"mapvars": {\n\t"skybox": "skyboxes/white",\n\t"maptitle": "Untitled Map by OGZ Editor"\n},\n"entities": {\n\t"particles": {\n\t\t"position": "512 512 512",\n\t\t"attributes": "0 0 0 0xFF00 0"\n\t},\n\t"mapmodel": {\n\t\t"position": "532 532 512",\n\t\t"attributes": "110 50 0 0 0"\n\t}\n}\n}';
-downloadbtn = document.getElementById("downloadbtn");
+var downloadbtn = document.getElementById("downloadbtn");
+var pako = window.pako;
 
-function setCaretPosition(ctrl, pos) {if (ctrl.setSelectionRange) {ctrl.focus(); ctrl.setSelectionRange(pos, pos);} else if (ctrl.createTextRange) {var range = ctrl.createTextRange(); range.collapse(true);range.moveEnd('character', pos); range.moveStart('character', pos); range.select();}}
+// JSON error catcher
+function setCaretPosition(ctrl, pos) {
+	if (ctrl.setSelectionRange) {
+		ctrl.focus(); ctrl.setSelectionRange(pos, pos);
+	} else if (ctrl.createTextRange) {
+		var range = ctrl.createTextRange();
+		range.collapse(true);
+		range.moveEnd('character', pos);
+		range.moveStart("character", pos);
+		range.select();
+	}
+}
 
 function pusherrorlbl(state, pos){
     errorlbl = document.getElementById("errorlbl");
@@ -12,7 +24,7 @@ function pusherrorlbl(state, pos){
         errorlog.style.display = errorlbl.style.display = "none";
     } else {
         errorlog.style.display = errorlbl.style.display = "unset";
-    };
+    }
     errorlbl.innerHTML = formattext(jsontextarea.value.slice(0, pos), "#04ff0057", "#00000029") + formattext(jsontextarea.value.slice(pos, pos + 1), "red", "black") + formattext(jsontextarea.value.slice(pos + 1), "#ff000057", "#00000029");
     errorlbl.scrollTop = jsontextarea.scrollTop;
 }
@@ -22,8 +34,8 @@ function formattext(str, bcolor, tcolor){
 }
 
 function pusherrorlog(er){
-	if (jsontextarea.value[0] != "{") {jsontextarea.value = "{" + jsontextarea.value; readJSON(); return};
-	if (jsontextarea.value[jsontextarea.value.length - 1] != "}") {jsontextarea.value += "}"; readJSON(); return};
+	if (jsontextarea.value[0] != "{") {jsontextarea.value = "{" + jsontextarea.value; readJSON(); return;}
+	if (jsontextarea.value[jsontextarea.value.length - 1] != "}") {jsontextarea.value += "}"; readJSON(); return;}
 
     er = er.toString().replace("SyntaxError:", formattext("<strong>Syntax Error</strong>:"));
     er = er.replace("token", "<span style='color: red;'><strong>token</strong></span>");
@@ -55,49 +67,46 @@ function pusherrorlog(er){
     
 }
 
+// Reads JSON, formats its values and concatenates everything as a raw version of a map file (.ogz)
 function readJSON(){
     try {
         JSON.parse(jsontextarea.value);
     } catch (e) {
         pusherrorlog(e);
-        return
+        return;
     }
     jsondata = JSON.parse(jsontextarea.value);
 
     mapdata = "";
 
-    //Header
+    // Header
     mapdata += formathead(jsondata.mapsize, Object.keys(jsondata.entities).length, 0, 0, 0, Object.keys(jsondata.mapvars).length);
     
-    //Mapvars
+    // Mapvars
     for (var key of Object.keys(jsondata.mapvars)) {
-        //val = jsondata.mapvars[key];
-        //if (typeof val == "number"){if (Number.isInteger(val)){type = 0} else {type = 1};} else {type = 2};
         mapdata += formatvar(2, key, jsondata.mapvars[key])
     };
 
-    //Gameident
+    // Gameident
     mapdata += "0366707300"; 
 
-    //Extras(?) & texture mru
+    // Extras(?) & texture mru
     mapdata += "00000000" + "050002000400030005000700";
 
-    //Entities
+    // Entities
     for (var key of Object.keys(jsondata.entities)) {
         mapdata += formatent(jsondata.entities[key].position, jsondata.entities[key].attributes, key)
     };
 
-    //Octree
+    // Octree
     mapdata += formatoctree(2, "2 3 4 5 6 7", 0) + formatoctree(2, "2 3 4 5 6 7", 0) + formatoctree(2, "2 3 4 5 6 7", 0) + formatoctree(2, "2 3 4 5 6 7", 0);
     mapdata += formatoctree(1, "0 0 0 0 0 0", 0) + formatoctree(1, "0 0 0 0 0 0", 0) + formatoctree(1, "0 0 0 0 0 0", 0) + formatoctree(1, "0 0 0 0 0 0", 0);
 
     rawtextarea = document.getElementById("mapdata");
-    rawtextarea.value = hexBtify(mapdata);
+    rawtextarea.value = hexBeautify(mapdata);	// adds spaces in the preview
+    if (rawtextarea.value.length > 0) {downloadbtn.style.display = "unset";}
 
-    if (rawtextarea.value.length > 0){downloadbtn.style.display = "unset";}
-    //removes spaces to convert correctly later
-    compressRaw(rawtextarea.value.replace(/\s/g, ""));
-    //download(rawtextarea.value.replace(/\s/g, ""));
+    download(pako.gzip(hextoByte(mapdata)));	// uses pako to compress the byte array as gzip (.ogz)    
 }
 
 function download(data){
@@ -110,9 +119,9 @@ function download(data){
         navigator.msSaveBlob(blob, fileName);
     } else {
         var csvUrl = URL.createObjectURL(blob);
-        $('#downloadbtn').attr({
-            'download': fileName,
-            'href': csvUrl
-        });
-    };
+        $("#downloadbtn").attr({
+            "download": fileName,
+            "href": csvUrl
+        })
+    }
 }
