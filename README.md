@@ -7,6 +7,7 @@ https://salatielsauer.github.io/OGZ-Editor/index.html
 - [x] Functions to read and convert data from json to hexadecimal
 - [x] Simple json syntax error catcher
 - [x] Light, Mapmodel, Playerstart, Envmap, Particles, Sound and Spotlight entities
+- [x] Support multiple entities of the same type
 - [ ] Teleport, Teledest and pickups entities
 - [ ] Integer and Float mapvars
 - [ ] Textures
