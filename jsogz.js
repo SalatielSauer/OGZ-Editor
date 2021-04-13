@@ -1,4 +1,4 @@
-// OGZ Editor by Salatiel - Converters & Formatters
+/* JS object to .OGZ translator by @SalatielSauer. */
 
 /*
 Converters
@@ -12,12 +12,6 @@ function floatHex(val){
 	return Array.apply(null, { length: 4 }).map((_, i) => getHex(view.getUint8(i))).reverse().join('');
 }
 
-function hexInt(val){
-	const bytes = new Uint8Array(val.toString().split(""));
-	const uint = new Uint32Array(bytes.buffer)[0];
-	return uint;
-}
-
 function intHex(val, byte){
 	val = parseInt(val);
 	return val.toString(16).padStart(byte, '0').match(/.{2}/g).reverse().join('')
@@ -27,33 +21,8 @@ function strHex(val){
 	return val.split("").reduce((hex,c)=>hex+=c.charCodeAt(0).toString(16).padStart(2,"0"),"")
 }
 
-function hexBeautify(val){
-	val = val.replace(/(.{32})/g,"$1\n").replace(/(.{4})/g,"$1 ");
-	return val.replace(/\s\n/g, "\n");
-}
-
 function hextoByte(val){
 	return new Uint8Array(val.match(/.{2}/g).map(e => parseInt(e, 16)));
-}
-
-function rgbToHex(r, g, b) {
-	return ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-}
-
-/**/
-function isFloat(val) {
-	var floatRegex = /^-?\d+(?:[.,]\d*?)?$/;
-	if (!floatRegex.test(val)) return false;
-	val = parseFloat(val);
-	if (isNaN(val)) return false;
-	return true;
-}
-
-function isInt(val) {
-	var intRegex = /^-?\d+$/;
-	if (!intRegex.test(val)) return false;
-	var intVal = parseInt(val, 10);
-	return parseFloat(val) == intVal && !isNaN(intVal);
 }
 
 /*
@@ -101,3 +70,51 @@ formatvar(2, "skybox", "ik2k/env/iklake")
 formatent("972 972 516", "336 0 0 0 0", 3)
 formatoctree(2, "2 3 4 5 6 7", 0)
 */
+
+function getobjkeys(obj) {return obj ? Object.keys(obj) : []}
+
+function getOGZ(inputdata, outputformat, error) {
+	if (typeof inputdata == "string") {
+		for (var e = 0; e < entitiesarray.length; e++) {
+			enttype = new RegExp(entitiesarray[e], "g")
+			inputdata = inputdata.replace(enttype, et=>{return et + e++})
+		}
+		try {
+			inputdata = JSON.parse(inputdata)
+		} catch (e) {if (error) error(e); return}
+	}
+
+	mapdata = ""
+
+	// header
+	mapdata += formathead(inputdata.mapsize||1024, getobjkeys(inputdata.entities).length, 0, 0, 0, getobjkeys(inputdata.mapvars).length)
+
+	// mapvars
+	for (var key of getobjkeys(inputdata.mapvars)) {
+		mapdata += formatvar(2, key, inputdata.mapvars[key])
+	}
+
+	// gameident
+	mapdata += "0366707300"
+
+	// extras(?) & texture mru
+	mapdata += "00000000" + "050002000400030005000700"
+
+	// entities
+	for (var key of getobjkeys(inputdata.entities)) {
+		mapdata += formatent(inputdata.entities[key].position, inputdata.entities[key].attributes, key)
+	}
+
+	// octree
+	mapdata += formatoctree(2, "2 3 4 5 6 7", 0) + formatoctree(2, "2 3 4 5 6 7", 0) + formatoctree(2, "2 3 4 5 6 7", 0) + formatoctree(2, "2 3 4 5 6 7", 0)
+	mapdata += formatoctree(1, "0 0 0 0 0 0", 0) + formatoctree(1, "0 0 0 0 0 0", 0) + formatoctree(1, "0 0 0 0 0 0", 0) + formatoctree(1, "0 0 0 0 0 0", 0)
+
+	switch(outputformat) {
+		case 0: default: return mapdata; break; 
+		case 1: return hextoByte(mapdata); break;
+		case 2: 
+			if (pako) return pako.gzip(hextoByte(mapdata));
+			console.log("%c pako not found, you need it to get the data in .ogz format: https://github.com/nodeca/pako", "color: red")
+		break;
+	}
+}
