@@ -4,9 +4,11 @@ A browser tool for writing Sauerbraten .ogz files (maps) using JSON.<br>
 https://salatielsauer.github.io/OGZ-Editor/index.html
 
 #### JSOGZ.js
-You can use **jsogz.js** or **jsogz.min.js** on your own page with the script tag:<br>`<script src="jsogz.min.js"></script>`
+You can use **jsogz.js** or **jsogz.min.js** on your own page with the script tag:<br>
+`<script src="jsogz.min.js"></script>`
 
-This will make the `JSOGZ` function available, which receives 2 parameters:<br>`JSOGZ({object}, type)`
+This will make the `JSOGZ` function available, which receives 2 parameters:<br>
+`JSOGZ({object}, type)`
 - type 0
   returns hex concatenated as plain text.
 - type 1
@@ -83,7 +85,7 @@ To add a subdivision to a child, simply create a new list within the previous li
 Each list reduces the size of the cube in half, that is, a subdivision of a 512x512 cube will create 8 new 256x256 cubes within it.
 
 The gif below shows a size 10 map with its first "chunk" subdivided once.
-![](https://raw.githubusercontent.com/SalatielSauer/ogz-editor/master/images/octree2.gif)
+![](https://raw.githubusercontent.com/SalatielSauer/ogz-editor/master/images/octree2.gif)<br>
 The non-optimized structure (before remip or calclight) would look like:
 ```
 "geometry": [
