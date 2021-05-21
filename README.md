@@ -1,7 +1,7 @@
 
 # OGZ-Editor
 A browser tool for writing [Sauerbraten](http://sauerbraten.org/) .ogz files (maps) using JSON.<br>
-https://salatielsauer.github.io/OGZ-Editor
+https://salatielsauer.github.io/OGZ-Editor/
 
 - [OGZ Editor](#ogz-editor)
   - [Map Variables](#map-variables)

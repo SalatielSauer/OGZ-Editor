@@ -51,5 +51,10 @@
 				<code class="language-json" id="highlight-content"></code>
 			</pre>
 		</div>
+		<script>
+			if ("serviceWorker" in navigator) {
+				navigator.serviceWorker.register("/OGZ-Editor/pwapp.js", {scope: "/OGZ-Editor/"})
+			}
+		</script>
 	</body>
 </html>

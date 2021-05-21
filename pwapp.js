@@ -4,14 +4,14 @@ self.addEventListener("install", (e) => {
 	e.waitUntil(
 		caches.open(cacheName).then((cache) => {
 			return cache.addAll([
-				"/",
-				"/index.html",
-				"/styles/styles.css",
-				"/styles/texteditor.css",
-				"/styles/sauerfont.ttf",
-				"/scripts/main.js",
-				"/scripts/jsocta.js",
-				"/scripts/texteditor.js"
+				"/OGZ-Editor/",
+				"/OGZ-Editor/index.html",
+				"/OGZ-Editor/styles/styles.css",
+				"/OGZ-Editor/styles/texteditor.css",
+				"/OGZ-Editor/styles/sauerfont.ttf",
+				"/OGZ-Editor/scripts/main.js",
+				"/OGZ-Editor/scripts/jsocta.js",
+				"/OGZ-Editor/scripts/texteditor.js"
 			]).then(() => self.skipWaiting());
 		})
 	);
