@@ -1,0 +1,117 @@
+@keyframes highlight-feedback-message-popup {
+	0% {
+		border-radius: 0px;
+		border-bottom-left-radius: 10px;
+		transform: translate(0px, 0px);
+		filter: opacity(0);
+	}
+	50% {
+		border-radius: 10px;
+		transform: translate(0px, -33px);
+		filter: opacity(1);
+	}
+	100% {
+		border-bottom-left-radius: 0px;
+		transform: translate(0px, -28px);
+	}
+}
+
+#editor {
+	background: transparent;
+	border-style: solid;
+	border-color: #101010;
+	border-radius: 0px;
+	border-width: 2px;
+	caret-color: white;
+	color: transparent;
+	margin-left: -2px;
+	margin-top: -2px;
+	outline: none;
+	transition: border-color 0.2s;
+	white-space: pre;
+	z-index: 1;
+}
+
+#editor:focus {
+	border-color: #444242;
+}
+
+#editor::selection {
+	background-color: #ed143db5;
+	color: white;
+}
+
+#highlight,
+#editor {
+	overflow: auto;
+}
+
+#highlight-content {
+	color: #bfbfbf;
+	filter: hue-rotate(310deg) saturate(3);
+	pointer-events: none;
+	text-shadow: 0px 1px 3px black;
+}
+
+#highlight-content,
+#editor {
+	display: block;
+	height: var(--editor-height);
+	max-height: var(--editor-height);
+	max-width: var(--editor-width);
+	min-width: var(--editor-width);
+	padding: 15px;
+	position: absolute;
+	resize: none;
+	top: 50px;
+	width: var(--editor-width);
+}
+
+.highlight-feedback-bad {
+	background-color: #503f19bf;
+	color: white;
+}
+
+.highlight-feedback-good {
+	background-color: #2e968859;
+	/* color: white; */
+}
+
+.highlight-feedback-token {
+	background-color: black;
+	color: white;
+}
+
+.highlight-feedback-message {
+	animation: highlight-feedback-message-popup 0.5s;
+	background-color: #000000d9;
+	border-color: orange;
+	border-radius: 10px;
+	border-style: dashed;
+	border-bottom-left-radius: 0px;
+	border-width: 1px;
+	box-shadow: 0 0 3px 0px black;
+	font-size: small;
+	padding: 5px;
+	pointer-events: all;
+	position: absolute;
+	transform: translate(0px, -28px);
+	transition: filter 0.3s;
+}
+
+.highlight-feedback-message #icon-close-message {
+	background-color: black;
+	border-color: black;
+	border-radius: 15px;
+    border-style: solid;
+	border-width: 1px;
+	color: white;
+	position: absolute;
+	transform: translate(-5px, -15px);
+	transition: color 0.5s;
+}
+
+.highlight-feedback-message #icon-close-message:hover {
+	color: orange;
+	cursor: pointer;
+}

@@ -1,0 +1,195 @@
+@font-face {
+	font-family: "sauerfont";
+	src: url("sauerfont.ttf");
+}
+
+@keyframes processing {
+	0% {
+		color: #52ddcf;
+	}
+	50% {
+		color: #1a89a7;
+	}
+    100% {
+		color: #3dd39b;
+	}
+}
+
+@keyframes element-fadein {
+	0% {
+		filter: opacity(0);
+		transform: translatey(20px);
+	}
+	100% {
+		filter: opacity(1);
+		transform: translatey(10px);
+	}
+}
+
+@keyframes element-fadeout {
+	0%,
+	70% {
+		filter: opacity(1);
+		transform: translatey(10px);
+	}
+	100% {
+		filter: opacity(0);
+		transform: translatey(20px);
+	}
+}
+
+:root {
+	--editor-height: 85%;
+	--editor-width: 95%;
+}
+
+* {
+	font-family: sauerfont;
+	font-size: 15px;
+}
+
+a {
+	color: #2991e4;
+	cursor: pointer;
+	text-decoration: none;
+	transition: color 0.5s;
+}
+
+a:hover {
+	color: #66bbff;
+}
+
+#filesystem-status {
+	color: #3dd3c4;
+	font-size: large;
+	margin: 0px;
+	pointer-events: none;
+	text-align: center;
+	transform: translatey(10px);
+	transition: color 1s;
+}
+
+body {
+	background-color: #333333;
+}
+
+button,
+.submenu-button {
+	background-color: #1d1a1d;
+	border-color: grey;
+	border-style: dashed;
+	box-shadow: 0 0 4px 0px black;
+	color: white;
+	margin: 0px;
+	margin-right: 5px;
+	padding: 8px;
+	transform: scale(1);
+	transition: background-color 0.7s, border-color 0.5s, border-radius 0.5s,
+		transform 0.5s;
+}
+
+button:active {
+	background-color: #1f1629 !important;
+	transform: scale(1) !important;
+}
+
+button:hover,
+button:focus-visible,
+.submenu:hover .submenu-button {
+	background-color: #191619;
+	border-color: crimson;
+	border-radius: 10px;
+	cursor: pointer;
+	outline: none;
+	transform: scale(0.95);
+}
+
+.element-fadein {
+	animation: element-fadein 0.3s, processing 1s infinite linear;
+	filter: opacity(1);
+}
+
+.element-fadeout {
+	animation: element-fadeout 3s;
+	filter: opacity(0);
+}
+
+.menu {
+	display: inline-flex;
+	overflow: hidden;
+}
+
+.menu .submenu-button {
+	border-width: 2px;
+}
+
+.menu .submenu:hover .submenu-button {
+	border-bottom-left-radius: 0px;
+	cursor: default;
+}
+
+.menu .submenu-content {
+	background-color: #151215;
+	border-color: crimson;
+	border-radius: 10px;
+	border-style: dashed;
+	border-top-left-radius: 0px;
+	border-width: 2px;
+	display: none;
+	left: 1.4px;
+	max-width: fit-content;
+	max-width: -moz-fit-content;
+	padding: 15px;
+	position: absolute;
+	width: 100%;
+	z-index: 1;
+}
+
+.menu .submenu-content button {
+	margin-top: 5px;
+	min-width: 110px;
+	text-align: left;
+}
+
+.menu .submenu-content p {
+	color: white;
+	font-family: sans-serif;
+	font-size: 10px;
+	margin: 1px;
+	margin-bottom: 3px;
+	text-align: center;
+}
+
+.menu .submenu-content h2 {
+	color: #2196f3;
+	margin: 2px;
+	text-align: center;
+}
+
+.menu .submenu:hover .submenu-content {
+	display: block;
+}
+
+.pageabout {
+	color: #d0d0d0;
+	position: absolute;
+	right: 50%;
+	text-align: center;
+	top: 0px;
+	transform: translate(50%);
+}
+
+.pageabout h2 {
+	margin: 0px;
+}
+
+.pageabout h2 span,
+.pageabout h2 a,
+.pageabout h2 i {
+	font-size: 11px;
+}
+
+.pagetop {
+	position: relative;
+	z-index: 2;
+}

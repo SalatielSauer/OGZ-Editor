@@ -1,32 +1,55 @@
+<!DOCTYPE html>
 <html>
 	<head>
+	    <meta charset="UTF-8">
+	    <meta name="author" content="Salatiel S.">
+	    <meta name="description" content="A tool for writing Cube 2 Sauerbraten maps using JSON.">
+		<title>OGZ Editor</title>
 		<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-		<link rel="stylesheet" type="text/css" href="style.css">
-		<meta name="description" content="A browser tool for writing Sauerbraten .ogz files (maps) using JSON.">
-		<title>OGZ Raw Editor</title>
+		<link rel="stylesheet" type="text/css" href="styles/styles.css"/>
+        <link rel="stylesheet" type="text/css" href="styles/texteditor.css"/>
+        <link rel="stylesheet"href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/stackoverflow-dark.min.css">
+        <link rel="manifest" href="manifest.json">
+        <script src="pwapp.js"></script>
+        <script src="https://kit.fontawesome.com/03a1634190.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/pako/1.0.3/pako.min.js"></script>
-		<script src="jsogz.min.js"></script>
-		<script src="main.js" defer></script>
+		<script src="scripts/jsocta.js"></script>
+		<script src="scripts/texteditor.js" defer></script>
+		<script src="scripts/main.js" defer></script>
 	</head>
-
 	<body>
-		<h2 style="text-align: center">OGZ Raw Editor · <a href="https://github.com/SalatielSauer/OGZ-Editor/#jsogz.js">jsogz.js</a> · <a href="http://sauerbraten.org">sauerbraten.org</a></h2>
-		<div id="errorlog"></div>
-		<div id="container">
-			<div id="errorlbl" style="display: none;"></div>
-			<textarea id="inputarea" spellcheck="false"></textarea>
+	    <div class="pagetop">
+	        <div class="menu">
+	            <div class="submenu">
+	                <h2 class="submenu-button"><i class="fas fa-plus"></i></h2>
+		            <div class="submenu-content">
+		                <h2 id="filesystem-file">No file selected</h2>
+		                <button id="button-save" title="CTRL+S"><i class="fas fa-save"></i> Save OGZ</button><br>
+		                <!--<p>CTRL+S</p>-->
+	                    <button id="button-saveas"><i class="fas fa-folder"></i> Save As...</button><br>
+	                    <!--<p>CTRL+SHIFT+S</p>-->
+	                    <button id="button-download"><a><i class="fas fa-download"></i> Download</a></button>
+		            </div>
+		        </div>
+		        <button id="button-validatejson"><i class="fas fa-search"></i> Validate JSON</button>
+		        <button id="button-formatjson"><i class="fas fa-file"></i> Format JSON</button>
+		    </div>
+		    <div class="pageabout">
+		        <h2>
+		            OGZ Raw Editor
+                    <!--<span>by <a href="https://salatielsauer.github.io/">@SalatielSauer</a></span>-->
+                    <br>
+                    <span><a target="_blank" href="https://github.com/SalatielSauer/OGZ-Editor/blob/master/README.md"><i class="fab fa-readme"></i> help</a> - <a href="https://github.com/SalatielSauer/OGZ-Editor#jsocta"><i class="fab fa-github"></i> jsocta</a> - <a href="http://sauerbraten.org/"> sauerbraten.org</a></span>
+                </h2> 
+            </div>
+            <h2 id="filesystem-status"></h2>
 		</div>
-		<button id="writedata">Write map data</button>
-		<a id="downloadbtn">Download OGZ</a>
-		<br>
-		<div>
-			<textarea id="mapdata" spellcheck="false"></textarea>
+		<div id="editor-container">
+			<textarea id="editor" spellcheck="false"></textarea>
+			<pre id="highlight" aria-hidden="true">
+				<code class="language-json" id="highlight-content"></code>
+			</pre>
 		</div>
-		<hr>
-		<!-- <p>For now you will have to compress the generated file using gzip to be able to open it in <a href="http://sauerbraten.org/" target="_blank">Sauerbraten</a>.<br>-->
-		<p>This tool will generate a .ogz file that you can open directly in <a href="http://sauerbraten.org/" target="_blank">Sauerbraten</a> using the /map command.<br>
-		Only <a href="https://github.com/SalatielSauer/OGZ-Editor/#octree-editing">octree editing</a>, entity spawn and some mapvars (strings only) are supported, feel free to <a href="https://github.com/SalatielSauer/OGZ-Editor" target="_blank">contribute</a> with new functions :)<br>Special thanks to <a href="https://incoherency.co.uk/blog/" target="_blank">James Stanley</a> for his <a href="http://web.archive.org/web/20201112035903/https://incoherency.co.uk/interest/sauer_map.html" target="_blank"> Sauerbraten map format documentation</a>.</p>
-		<p style="text-align: center; font-size: 13px"><a href="https://salatielsauer.github.io/" target="_blank">@SalatielSauer</a></p>
 	</body>
-
 </html>
