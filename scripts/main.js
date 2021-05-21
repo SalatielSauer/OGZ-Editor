@@ -156,9 +156,9 @@ document.body.addEventListener("keydown", (event) => {
 });
 
 document.body.addEventListener("keyup", (event) => {
-    pageKeylog.splice(pageKeylog.indexOf(event.key), 1)
+	pageKeylog.splice(pageKeylog.indexOf(event.key), 1)
 })
 
 if ("serviceWorker" in navigator) {
-	navigator.serviceWorker.register("/pwapp.js", {scope: "/"})
+	navigator.serviceWorker.register("pwapp.js", {scope: "/"})
 }

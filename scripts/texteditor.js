@@ -137,7 +137,7 @@ class Editor {
 	}
 
 	format(indent = "\t") {
-        this.parse((object) => {
+		this.parse((object) => {
 			this.editor.value = JSON.stringify(object, (key, value) => {
 				if (Array.isArray(value) && !value.some((k) => k && (typeof k) == "object")) {
 				  return `\uE000${JSON.stringify(value.map((v) => (typeof v) == "string" ? v.replace(/"/g, "\uE001") : v))}\uE000`;
@@ -158,7 +158,7 @@ function getNewFileHandle() {
 			accept: {
 				"application/gzip": [".ogz"]
 			}
-        }],
+		}],
 		excludeAcceptAllOption: true,
 		multiple: false,
 	});

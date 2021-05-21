@@ -1,32 +1,32 @@
 {
 	"short_name": "OGZ Editor",
-    "name": "OGZ Raw Editor - Create Sauerbraten maps using JSON",
-    "icons": [{
+	"name": "OGZ Raw Editor - Create Sauerbraten maps using JSON",
+	"icons": [{
 		"src": "/images/icon-192.png",
 		"type": "image/png",
 		"sizes": "192x192"
 	}],
 	"screenshots": [
-        {
-            "src": "/images/screenshot-1.png",
-            "type": "image/png",
-            "sizes": "1024x768"
-        },
-        {
-            "src": "/images/screenshot-2.png",
-            "type": "image/png",
-            "sizes": "1024x768"
-        },
-        {
-            "src": "/images/screenshot-3.png",
-            "type": "image/png",
-            "sizes": "1024x768"
-        }
+		{
+			"src": "/images/screenshot-1.png",
+			"type": "image/png",
+			"sizes": "1024x768"
+		},
+		{
+			"src": "/images/screenshot-2.png",
+			"type": "image/png",
+			"sizes": "1024x768"
+		},
+		{
+			"src": "/images/screenshot-3.png",
+			"type": "image/png",
+			"sizes": "1024x768"
+		}
 	],
-    "start_url": "/",
-    "background_color": "#ed143d",
-    "display": "standalone",
-    "orientation": "landscape",
-    "scope": "/",
-    "theme_color": "#1c1b1b"
+	"start_url": "/",
+	"background_color": "#ed143d",
+	"display": "standalone",
+	"orientation": "landscape",
+	"scope": "/",
+	"theme_color": "#1c1b1b"
 }

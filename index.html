@@ -1,49 +1,49 @@
 <!DOCTYPE html>
 <html>
 	<head>
-	    <meta charset="UTF-8">
-	    <meta name="author" content="Salatiel S.">
-	    <meta name="description" content="A tool for writing Cube 2 Sauerbraten maps using JSON.">
+		<meta charset="UTF-8">
+		<meta name="author" content="Salatiel S.">
+		<meta name="description" content="A tool for writing Cube 2 Sauerbraten maps using JSON.">
 		<title>OGZ Editor</title>
 		<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 		<link rel="stylesheet" type="text/css" href="styles/styles.css"/>
-        <link rel="stylesheet" type="text/css" href="styles/texteditor.css"/>
-        <link rel="stylesheet"href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/stackoverflow-dark.min.css">
-        <link rel="manifest" href="manifest.json">
-        <script src="pwapp.js"></script>
-        <script src="https://kit.fontawesome.com/03a1634190.js" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="styles/texteditor.css"/>
+		<link rel="stylesheet"href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/stackoverflow-dark.min.css">
+		<link rel="manifest" href="manifest.json">
+		<script src="pwapp.js"></script>
+		<script src="https://kit.fontawesome.com/03a1634190.js" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/pako/1.0.3/pako.min.js"></script>
 		<script src="scripts/jsocta.js"></script>
 		<script src="scripts/texteditor.js" defer></script>
 		<script src="scripts/main.js" defer></script>
 	</head>
 	<body>
-	    <div class="pagetop">
-	        <div class="menu">
-	            <div class="submenu">
-	                <h2 class="submenu-button"><i class="fas fa-plus"></i></h2>
-		            <div class="submenu-content">
-		                <h2 id="filesystem-file">No file selected</h2>
-		                <button id="button-save" title="CTRL+S"><i class="fas fa-save"></i> Save OGZ</button><br>
-		                <!--<p>CTRL+S</p>-->
-	                    <button id="button-saveas"><i class="fas fa-folder"></i> Save As...</button><br>
-	                    <!--<p>CTRL+SHIFT+S</p>-->
-	                    <button id="button-download"><a><i class="fas fa-download"></i> Download</a></button>
-		            </div>
-		        </div>
-		        <button id="button-validatejson"><i class="fas fa-search"></i> Validate JSON</button>
-		        <button id="button-formatjson"><i class="fas fa-file"></i> Format JSON</button>
-		    </div>
-		    <div class="pageabout">
-		        <h2>
-		            OGZ Raw Editor
-                    <!--<span>by <a href="https://salatielsauer.github.io/">@SalatielSauer</a></span>-->
-                    <br>
-                    <span><a target="_blank" href="https://github.com/SalatielSauer/OGZ-Editor/blob/master/README.md"><i class="fab fa-readme"></i> help</a> - <a href="https://github.com/SalatielSauer/OGZ-Editor#jsocta"><i class="fab fa-github"></i> jsocta</a> - <a href="http://sauerbraten.org/"> sauerbraten.org</a></span>
-                </h2> 
-            </div>
-            <h2 id="filesystem-status"></h2>
+		<div class="pagetop">
+			<div class="menu">
+				<div class="submenu">
+					<h2 class="submenu-button"><i class="fas fa-plus"></i></h2>
+					<div class="submenu-content">
+						<h2 id="filesystem-file">No file selected</h2>
+						<button id="button-save" title="CTRL+S"><i class="fas fa-save"></i> Save OGZ</button><br>
+						<!--<p>CTRL+S</p>-->
+						<button id="button-saveas"><i class="fas fa-folder"></i> Save As...</button><br>
+						<!--<p>CTRL+SHIFT+S</p>-->
+						<button id="button-download"><a><i class="fas fa-download"></i> Download</a></button>
+					</div>
+				</div>
+				<button id="button-validatejson"><i class="fas fa-search"></i> Validate JSON</button>
+				<button id="button-formatjson"><i class="fas fa-file"></i> Format JSON</button>
+			</div>
+			<div class="pageabout">
+				<h2>
+					OGZ Raw Editor
+					<!--<span>by <a href="https://salatielsauer.github.io/">@SalatielSauer</a></span>-->
+					<br>
+					<span><a target="_blank" href="https://github.com/SalatielSauer/OGZ-Editor/blob/master/README.md"><i class="fab fa-readme"></i> help</a> - <a href="https://github.com/SalatielSauer/OGZ-Editor#jsocta"><i class="fab fa-github"></i> jsocta</a> - <a href="http://sauerbraten.org/"> sauerbraten.org</a></span>
+				</h2> 
+			</div>
+			<h2 id="filesystem-status"></h2>
 		</div>
 		<div id="editor-container">
 			<textarea id="editor" spellcheck="false"></textarea>
