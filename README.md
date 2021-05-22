@@ -15,6 +15,7 @@ https://salatielsauer.github.io/OGZ-Editor/
   - [OctaMapvars](#octamapvars)
   - [OctaEntities](#octaentities)
   - [OctaGeometry](#octageometry)
+  - [NodeJS](#nodejs)
 
 ### Map Variables
 To apply mapvars you must pay special attention to their types, strings must be enclosed in double quotes and RGB colors must be defined as arrays.
@@ -153,8 +154,14 @@ Detailed cube manipulation is not yet supported.
 # JSOCTA
 JSOCTA is what powers OGZ Editor, it consists of functions that read, format and convert the contents of a JavaScript object to a valid OGZ.
 
-You can use **jsocta.js** on your own page with the script tag:<br>
-`<script src="jsocta.js"></script>`
+You can easily install [**jsocta.js**](https://raw.githubusercontent.com/SalatielSauer/OGZ-Editor/master/scripts/jsocta.js) on your own page with the script tag:<br>
+```html
+<script src="jsocta.js"></script>
+```
+or in NodeJS:
+```js
+const jsocta = require("./scripts/jsocta.js")
+```
 
 JSOCTA has the following classes and methods:
  ### OctaMap
@@ -180,7 +187,24 @@ JSOCTA has the following classes and methods:
    - `.getByteArray(callback)` 
    Returns the concatenated result as an uncompressed byte array.
    - `.getOGZ(callback)`
-   Returns the concatenated result as a compressed ([gzip](https://en.wikipedia.org/wiki/Gzip)) byte array, requires [pako](https://github.com/nodeca/pako).
+   Returns the concatenated result as a compressed ([gzip](https://en.wikipedia.org/wiki/Gzip)) byte array, requires [pako](https://github.com/nodeca/pako) or any other gzip functionality that you can specify with the `gzip` property, by default it is pako.
+    ```js
+    const octamap = new OctaMap({})
+    octamap.gzip = window.pako.gzip
+    octamap.getOGZ((result) => {
+      console.log(result)
+    })
+    ```
+
+   This is just to make it intuitive, alternatively you can use `.getByteArray(callback)` directly with the gzip function of your choice, for example using zlib in NodeJS:
+    ```js
+    const zlib = require("zlib")
+    const jsocta = require("./scripts/jsocta.js")
+    const map = new jsocta.Map({})
+    map.getByteArray((result) => {
+      console.log(zlib.Gzip(result))
+    })
+    ```
 
  ### OctaMapvars
  - `new OctaMapvars(object)`
@@ -206,12 +230,12 @@ JSOCTA has the following classes and methods:
    - `.format(entity, callback)`
    Converts and concatenates the `entity.position` and `entity.attributes` of a single entity, returns a string.
     ```js
-      new OctaEntities().format({
-          "position": [512, 512, 512],
-          "attributes": ["mapmodel", 0, 177, 0, 0, 0]
-      }, (result)=>{
-          console.log(result)
-      })
+    new OctaEntities().format({
+        "position": [512, 512, 512],
+        "attributes": ["mapmodel", 0, 177, 0, 0, 0]
+    }, (result)=>{
+        console.log(result)
+    })
     ```
    - `.get(callback)`
    Returns an object with the position and attributes of all entities in `array`.
@@ -224,11 +248,11 @@ JSOCTA has the following classes and methods:
    - `.format(cube, callback, ?properties)`
    Converts and concatenates the single item/object `cube` and its properties, if any. Returns a string.
     ```js
-      new OctaGeometry().format({
-          "solid": {textures: [1, 2, 3, 4, 5, 6]}
-      }, (result)=>{
-          console.log(result)
-      })
+    new OctaGeometry().format({
+        "solid": {textures: [1, 2, 3, 4, 5, 6]}
+    }, (result)=>{
+        console.log(result)
+    })
     ```
    - `.get(callback)`
    Returns an object with the type and properties of all cubes in `array`.
@@ -237,11 +261,27 @@ JSOCTA has the following classes and methods:
    - `.insert(child, start, end, maxdepth)`
    (Experimental) Inserts a `child` in `array`, with initial index at `start` and final index at `end`, the subdivisions are determined by `maxdepth`.
     ```js
-      let array = []
-      new OctaGeometry(array).insert("solid", 2, 5, 4)
-      console.log(array)
+    let array = []
+    new OctaGeometry(array).insert("solid", 2, 5, 4)
+    console.log(array)
     ```
-    
+
+ ### NodeJS
+ `module.exports` has the classes in the following properties:
+   ```
+   Map: OctaMap,
+   MapVars: OctaMapvars,
+   Entities: OctaEntities,
+   Geometry: OctaGeometry
+   ```
+   to access them just `require` the jsocta.js file:
+   ```js
+   const jsocta = require(".scripts/jsocta.js")
+   new jsocta.Mapvars({}).format((result) => {
+    console.log(result)
+   })
+   ```
+
 <hr>
 
 #### JSOCTA<br>

@@ -21,6 +21,7 @@ const dataTypes = {
 
 class OctaMap {
 	constructor(object) {
+		this.gzip = (typeof window != "undefined" && typeof window.pako != "undefined") ? window.pako.gzip : ""
 		this.mapvars = object.mapvars || {"maptitle": "Untitled map by Unknown"}
 		this.entities = object.entities || []
 		this.octree = object.geometry || []
@@ -67,13 +68,13 @@ class OctaMap {
 		})
 	}
 
-	getOGZ(callback) {
-		if (!window.pako) {
-			throw "jsocta requires pako to get the data in .ogz format: https://github.com/nodeca/pako";
-			return;
-		}
-			this.getByteArray((array) => {
-			callback(window.pako.gzip(array))
+	getOGZ(callback) {		
+		this.getByteArray((array) => {
+			if (this.gzip) {
+				return callback(this.gzip(array))
+			}
+			callback(array)
+			throw "unable to compress octa, no gzip function available (https://github.com/nodeca/pako), returning ByteArray.";
 		})
 	}
 }
@@ -228,6 +229,15 @@ class OctaGeometry {
         this.array[end] = child;
 	}
 }
+
+try {
+	module.exports = {
+		Map: OctaMap,
+		Mapvars: OctaMapvars,
+		Entities: OctaEntities,
+		Geometry: OctaGeometry
+	}
+} catch (error) {}
 
 function _floattoHex(val) {
 	var getHex = i => ("00" + i.toString(16)).slice(-2)
