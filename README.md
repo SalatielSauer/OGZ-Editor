@@ -1,6 +1,6 @@
 
 # OGZ-Editor
-A browser for writing [Sauerbraten](http://sauerbraten.org/) .ogz files (maps) using JSON.<br>
+A browser tool for writing [Sauerbraten](http://sauerbraten.org/) .ogz files (maps) using JSON.<br>
 https://salatielsauer.github.io/OGZ-Editor/
 
 - [OGZ Editor](#ogz-editor)
