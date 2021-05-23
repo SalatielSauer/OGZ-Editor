@@ -21,10 +21,9 @@ const dataTypes = {
 
 class OctaMap {
 	constructor(object) {
-		this.gzip = (typeof window != "undefined" && typeof window.pako != "undefined") ? window.pako.gzip : ""
-		this.mapvars = object.mapvars || {"maptitle": "Untitled map by Unknown"}
-		this.entities = object.entities || []
-		this.octree = object.geometry || []
+		this.mapvars = object.mapvars || { maptitle: "Untitled map by Unknown" };
+		this.entities = object.entities || [];
+		this.octree = object.geometry || [];
 		this.header = {
 			magic: "OCTA",
 			version: 29,
@@ -34,126 +33,117 @@ class OctaMap {
 			numpvs: 0,
 			lightmaps: 0,
 			blendmap: 0,
-			numvars: Object.keys(this.mapvars).length
+			numvars: Object.keys(this.mapvars).length,
 		};
- 
-		Object.keys(this.header).forEach((key)=>{
-			this.header[key] = (getTypeofVar(this.header[key]) == "string") ? _strtoHex(this.header[key]) : _inttoHex(this.header[key], 8)
-		})
+
+		Object.keys(this.header).forEach((key) => {
+			this.header[key] =
+				getTypeofVar(this.header[key]) == "string"
+					? _strtoHex(this.header[key])
+					: _inttoHex(this.header[key], 8);
+		});
 
 		// things that are unlikely to change
 		// gameident ("fps"), extraentinfosize, MRU textures
 		this.extra = "036670730000000000050002000400030005000700";
 
-		new OctaMapvars(this.mapvars).read((data)=>{this.mapvars = data})
-		new OctaEntities(this.entities).read((data)=>{this.entities = data})
-		new OctaGeometry(this.octree).read((data)=>{this.octree = data})
+		this.mapvars = new OctaMapvars(this.mapvars).getString();
+		this.entities = new OctaEntities(this.entities).getString();
+		this.octree = new OctaGeometry(this.octree).getString();
 	}
 
-	getString(callback) {
-		return callback(
-			Object.values(this.header).join("") +
-				this.mapvars +
-				this.extra +
-				this.entities +
-				this.octree
-		)
+	getStringArray() {
+		// header + mapvars + extra + entities + octree
+		return ([
+			Object.values(this.header).join(""),
+			this.mapvars,
+			this.extra,
+			this.entities,
+			this.octree
+		]);
 	}
 
-	getByteArray(callback) {
-		this.getString((string) => {
-			return callback(
-				_hextoByte(string)
-			)
-		})
+	getString() {
+		return this.getStringArray().join("");
 	}
 
-	getOGZ(callback) {		
-		this.getByteArray((array) => {
-			if (this.gzip) {
-				return callback(this.gzip(array))
-			}
-			callback(array)
-			throw "unable to compress octa, no gzip function available (https://github.com/nodeca/pako), returning ByteArray.";
-		})
+	getByteArray() {
+		return _hextoByte(this.getString());
 	}
 }
 
 class OctaMapvars {
 	constructor(object) {
 		this.object = object;
-		this.data = "";
 	}
 
-	format(mapvar, callback) {
+	format(mapvar) {
 		// treats array values as RGB and converts it to decimal
 		if (typeof mapvar.value == "object") {
-			mapvar.value = _rgbtoInt(mapvar.value)
+			mapvar.value = _rgbtoInt(mapvar.value);
 		}
-		mapvar.type = getTypeofVar(mapvar.value)
+		mapvar.type = getTypeofVar(mapvar.value);
 		// int/float: type + name length + name + value
 		//   string: type + name length + name + value length + value
-		return callback(
+		return (
 			_inttoHex(dataTypes.mapvar.indexOf(mapvar.type), 2) +
 			_inttoHex(mapvar.name.length, 4) +
-			_strtoHex(mapvar.name) + (
-				(mapvar.type == "integer") ? _inttoHex(mapvar.value, 8) :
-				(mapvar.type == "float") ? _floattoHex(mapvar.value) :
-				_inttoHex(mapvar.value.length, 4) + _strtoHex(mapvar.value)
-			)
-		)
+			_strtoHex(mapvar.name) +
+			(mapvar.type == "integer"
+				? _inttoHex(mapvar.value, 8)
+				: mapvar.type == "float"
+				? _floattoHex(mapvar.value)
+				: _inttoHex(mapvar.value.length, 4) + _strtoHex(mapvar.value))
+		);
 	}
 
-	get(callback) {
-		for (let key of Object.keys(this.object)) {
-			callback({name: key, value: this.object[key]})
-		}
+	getStringArray() {
+		return Object.keys(this.object).map((key, index) =>
+			this.format({ name: key, value: Object.values(this.object)[index] })
+		);
 	}
 
-	read(callback) {
-		this.get((mapvar)=>{
-			this.format(mapvar, (data)=>{
-				this.data += data;
-			})
-		})
-		callback(this.data)
+	getString() {
+		return this.getStringArray().join("");
+	}
+
+	getByteArray() {
+		return _hextoByte(this.getString());
 	}
 }
 
 class OctaEntities {
 	constructor(array) {
 		this.array = array;
-		this.data = "";
 	}
 
-	format(entity, callback) {
-		entity.position = entity.position || [512, 512, 512]
-		entity.attributes = entity.attributes || ["mapmodel", 0, 0, 0, 0, 0]
-		entity.type = (dataTypes.entity.includes(entity.attributes[0])) ? dataTypes.entity.indexOf(entity.attributes[0]) : 0;
+	format(entity) {
+		entity.position = entity.position || [512, 512, 512];
+		entity.attributes = entity.attributes || ["mapmodel", 0, 0, 0, 0, 0];
+		entity.type = dataTypes.entity.includes(entity.attributes[0])
+			? dataTypes.entity.indexOf(entity.attributes[0])
+			: 0;
 
-		return callback(
-			// position + attributes + type
-			entity.position
-				.map((coordinate) => _floattoHex(coordinate)).join("") +
-			entity.attributes.slice(1)
-				.map((attribute) => _inttoHex((typeof attribute == "object") ? _rgbtoShortHex(attribute) : attribute, 4)).join("") +
-			_inttoHex(entity.type, 4)
+		// position + attributes + type
+		return (
+			entity.position.map((coordinate) => _floattoHex(coordinate)).join("") +
+				entity.attributes.slice(1).map((attribute) =>
+					_inttoHex(typeof attribute == "object" ? _rgbtoShortHex(attribute) : attribute, 4)
+				).join("") +
+				_inttoHex(entity.type, 4)
 		);
 	}
 
-	get(callback) {
-		for (let entity of this.array) {
-			callback(entity);
-		}
+	getStringArray() {
+		return this.array.map((item) => this.format(item));
 	}
 
-	read(callback) {
-		this.get((entity) => {
-			this.format(entity, (data) => {
-				this.data += data;
-			});
-		});
-		callback(this.data);
+	getString() {
+		return this.getStringArray().join("");
+	}
+
+	getByteArray() {
+		return _hextoByte(this.getString());
 	}
 }
 
@@ -161,63 +151,63 @@ class OctaGeometry {
 	constructor(array) {
 		this.depth = 0;
 		this.array = array;
-		this.data = "";
 		this.lasttexture = 1;
 	}
 
-	format(cube, callback, properties = {}) {
+	format(cube, properties = {}) {
 		if (typeof cube == "object") {
-			for (let key in cube) {
-				this.format(key, callback, cube[key]);
-			}
-			return;
-		} else {
-			if (!properties.textures) {
-				properties.textures = [];
-			}
-			// inherits the last texture of the last cube if there is none
-			this.lasttexture = properties.textures[properties.textures.length - 1] || this.lasttexture;
-			properties.textures = properties.textures.concat(
-				Array(6 - properties.textures.length).fill(this.lasttexture)
+			return Object.keys(cube).map((key, index) =>
+				this.format(key, Object.values(cube)[index])
 			);
 		}
 
+		if (!properties.textures) {
+			properties.textures = [];
+		}
+
+		// inherits the last texture of the last cube if there is none
+		this.lasttexture = properties.textures[properties.textures.length - 1] || this.lasttexture;
+		properties.textures = properties.textures.concat(
+			Array(6 - properties.textures.length).fill(this.lasttexture)
+		);
+
 		switch (cube) {
 			case "children":
-				return callback("00"); // subdivide child
+				return "00"; // subdivide child
 			case "empty":
 			case "solid":
 			case "normal":
 			case "lodcube":
-				return callback(
-					// type + texture + mask
+				// type + texture + mask
+				return (
 					_inttoHex(dataTypes["octree"].indexOf(cube), 2) +
 					properties.textures.map((tex) => _inttoHex(tex, 4)).join("") +
 					_inttoHex(properties.mask || 0, 2)
 				);
-				break;
 		}
 	}
 
-	get(callback) {
-		// fill undefined children with empty cubes
-		this.array = this.array.concat(Array(8 - this.array.length).fill("empty"));
-		for (let cube of this.array) {
-			if (Array.isArray(cube)) {
-				callback("children");
-				this.array = cube;
-				this.get(callback); // get children recursively
-			} else {callback(cube)}
-		};
+	getChildren(item, root = 0) {
+		if (Array.isArray(item)) {
+			item = item.concat(Array(8 - item.length).fill("empty")); // fills undefined children with empty cubes
+			if (!root) {
+				item.splice(0, 0, "children"); // inserts children indicator
+			}
+			return item.map((item) => this.getChildren(item)); // reads children recursively
+		}
+		return this.format(item);
 	}
 
-	read(callback) {
-		this.get((cube) => {
-			this.format(cube, (data) => {
-				this.data += data;
-			});
-		});
-		callback(this.data);
+	getStringArray() {
+		return this.getChildren(this.array, 1);
+	}
+
+	getString() {
+		return this.getStringArray().join("").replace(/,/g, "");
+	}
+
+	getByteArray() {
+		return _hextoByte(this.getString());
 	}
 
 	insert(child, start, end, maxdepth) {
@@ -226,7 +216,7 @@ class OctaGeometry {
 			this.depth += 1;
 			return this.insert(child, 0, end, maxdepth);
 		}
-        this.array[end] = child;
+		this.array[end] = child;
 	}
 }
 
@@ -236,7 +226,7 @@ try {
 		Mapvars: OctaMapvars,
 		Entities: OctaEntities,
 		Geometry: OctaGeometry
-	}
+	};
 } catch (error) {}
 
 function _floattoHex(val) {

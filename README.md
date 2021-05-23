@@ -1,6 +1,6 @@
 
 # OGZ-Editor
-A browser tool for writing [Sauerbraten](http://sauerbraten.org/) .ogz files (maps) using JSON.<br>
+A browser for writing [Sauerbraten](http://sauerbraten.org/) .ogz files (maps) using JSON.<br>
 https://salatielsauer.github.io/OGZ-Editor/
 
 - [OGZ Editor](#ogz-editor)
@@ -11,11 +11,12 @@ https://salatielsauer.github.io/OGZ-Editor/
     - [Textures](#textures)
     - [Corner Editing](#corner-editing)
 - [JSOCTA](#jsocta)
-  - [OctaMap](#octamap)
-  - [OctaMapvars](#octamapvars)
-  - [OctaEntities](#octaentities)
-  - [OctaGeometry](#octageometry)
-  - [NodeJS](#nodejs)
+  - [Classes](#classes)
+  - [Common Methods](#common-methods)
+  - [NodeJS Module](#nodejs-module)
+  - [Getting the OGZ file](#getting-the-ogz-file)
+    - [Browser](#browser-pakogzip)
+    - [NodeJS](#nodejs-zlibgzip)
 
 ### Map Variables
 To apply mapvars you must pay special attention to their types, strings must be enclosed in double quotes and RGB colors must be defined as arrays.
@@ -162,129 +163,88 @@ or in NodeJS:
 ```js
 const jsocta = require("./scripts/jsocta.js")
 ```
+If you don't have NodeJS installed and want to do more than what OGZ-Editor provides, you can access all classes and methods using your browser's developer tools console (F12 while on the [OGZ-Editor page](https://salatielsauer.github.io/OGZ-Editor/)).
 
-JSOCTA has the following classes and methods:
- ### OctaMap
- - `new OctaMap(object)`
- The main class, it formats the converted result of all other classes respecting the OCTA structure.
-   - `.getString(callback)`
-   Returns the concatenated result as plain text.
-    ```js
-    new OctaMap({
-      "mapvars": {"skybox": "skyboxes/white"},
-      "entities": [
-        {"position": [768, 256, 512], "attributes": ["playerstart", 0, 0, 0, 0, 0]},
-        {"position": [768, 256, 512], "attributes": ["teleport", 0, 193, 0, 0, 0]},
-        {"position": [768, 256, 512], "attributes": ["teledest", 90, 1, 1, 0, 0]},
-        {"position": [256, 256, 512], "attributes": ["teledest", 270, 0, 1, 0, 0]},
-        {"position": [256, 256, 512], "attributes": ["teleport", 1, 196, 0, 0, 0]}
-      ],
-      "geometry": [{"solid": {"textures": [2]}}, {"solid": {"textures": [1]}}]
-    }).getString((result) => {
-      console.log(result)
-    })
-    ```
-   - `.getByteArray(callback)` 
-   Returns the concatenated result as an uncompressed byte array.
-   - `.getOGZ(callback)`
-   Returns the concatenated result as a compressed ([gzip](https://en.wikipedia.org/wiki/Gzip)) byte array, requires [pako](https://github.com/nodeca/pako) or any other gzip functionality that you can specify with the `gzip` property, by default it is pako.
-    ```js
-    const octamap = new OctaMap({})
-    octamap.gzip = window.pako.gzip
-    octamap.getOGZ((result) => {
-      console.log(result)
-    })
-    ```
+### Classes
+JSOCTA has the following classes:
+- `new OctaMap(object)`
+The main class, it formats the converted result of all other classes respecting the OCTA structure.
 
-   This is just to make it intuitive, alternatively you can use `.getByteArray(callback)` directly with the gzip function of your choice, for example using zlib in NodeJS:
-    ```js
-    const zlib = require("zlib")
-    const jsocta = require("./scripts/jsocta.js")
-    const map = new jsocta.Map({})
-    map.getByteArray((result) => {
-      console.log(zlib.Gzip(result))
-    })
-    ```
+- `new OctaMapvars(object)`
+Handles the formatting and conversion of the map variables object.
 
- ### OctaMapvars
- - `new OctaMapvars(object)`
- Handles the formatting and conversion of the map variables object.
-   - `.format(mapvar, callback)`
-   Converts and concatenates the `mapvar.name` and `mapvar.value` of a single mapvar, returns a string.
-    ```js
-    new OctaMapvars().format({
-        "name": "maptitle",
-        "value": "Untitled map by Unknown"
-    }, (result)=>{
-        console.log(result)
-    })
-    ```
-   - `.get(callback)`
-   Returns an object with the name and value of all mapvars in `object`.
-   - `.read(callback)`
-   Uses the `.format` and `.get` methods to convert, concatenate and return all the mapvars of the `object` as a string.
+- `new OctaEntities(array)`
+Handles the formatting and conversion of the map entities array.
 
- ### OctaEntities
- - `new OctaEntities(array)`
- Handles the formatting and conversion of the map entities.
-   - `.format(entity, callback)`
-   Converts and concatenates the `entity.position` and `entity.attributes` of a single entity, returns a string.
-    ```js
-    new OctaEntities().format({
-        "position": [512, 512, 512],
-        "attributes": ["mapmodel", 0, 177, 0, 0, 0]
-    }, (result)=>{
-        console.log(result)
-    })
-    ```
-   - `.get(callback)`
-   Returns an object with the position and attributes of all entities in `array`.
-   - `.read(callback)`
-   Uses the `.format` and `.get` methods to convert, concatenate and return all the entities of the `array` as a string.
+- `new OctaGeometry(array)`
+Handles the formatting and conversion of the map octree array.
 
- ### OctaGeometry
- - `new OctaGeometry(array)`
- Handles the formatting and conversion of the map octree.
-   - `.format(cube, callback, ?properties)`
-   Converts and concatenates the single item/object `cube` and its properties, if any. Returns a string.
-    ```js
-    new OctaGeometry().format({
-        "solid": {textures: [1, 2, 3, 4, 5, 6]}
-    }, (result)=>{
-        console.log(result)
-    })
-    ```
-   - `.get(callback)`
-   Returns an object with the type and properties of all cubes in `array`.
-   - `.read(callback)`
-   Uses the `.format` and `.get` methods to convert, concatenate and return all the cubes of the `array` as a string.
-   - `.insert(child, start, end, maxdepth)`
-   (Experimental) Inserts a `child` in `array`, with initial index at `start` and final index at `end`, the subdivisions are determined by `maxdepth`.
-    ```js
-    let array = []
-    new OctaGeometry(array).insert("solid", 2, 5, 4)
-    console.log(array)
-    ```
+### Common Methods
+All the above classes have the following methods:
+- `.format(object)`
+ Converts a single item and returns it as a string array.
+- `.getStringArray()`
+ Converts and returns all (string) items as an array.
+- `.getString()`
+ Converts and returns all items as a concatenated string.
+- `.getByteArray()`
+ Converts, concatenates and returns all items as a byte array.
 
- ### NodeJS
- `module.exports` has the classes in the following properties:
-   ```
-   Map: OctaMap,
-   MapVars: OctaMapvars,
-   Entities: OctaEntities,
-   Geometry: OctaGeometry
-   ```
-   to access them just `require` the jsocta.js file:
-   ```js
-   const jsocta = require(".scripts/jsocta.js")
-   new jsocta.Mapvars({}).format((result) => {
+### NodeJS Module
+`module.exports` has the classes in the following properties:
+```
+Map: OctaMap,
+MapVars: OctaMapvars,
+Entities: OctaEntities,
+Geometry: OctaGeometry
+```
+to access them just `require` the jsocta.js file:
+```js
+const jsocta = require(".scripts/jsocta.js")
+console.log(new jsocta.Mapvars({}).getString())
+```
+
+### Getting the OGZ file
+To get a valid ogz you need to compress the value of `.getByteArray()` using [gzip](https://en.wikipedia.org/wiki/Gzip).
+
+#### Browser [pako.gzip](https://github.com/nodeca/pako)
+```html
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.3/pako.min.js"></script>
+  <script src="scripts/jsocta.js"></script>
+</head>
+<body>
+  <script>
+    console.log(
+      pako.gzip(
+        new OctaMap({
+          "mapvars": {"maptitle": "map generated with the browser"},
+          "geometry": ["solid", {"solid": {"textures": [3]}}]
+        }).getByteArray()
+      )
+    )
+  </script>
+</body>
+```
+
+#### NodeJS [zlib.gzip](https://nodejs.org/api/zlib.html)
+```js
+const zlib = require("zlib")
+const jsocta = require("./scripts/jsocta.js")
+
+zlib.gzip(
+  new jsocta.Map({
+    "mapvars": {"maptitle": "map generated with nodejs"},
+    "geometry": ["solid", {"solid": {"textures": [3]}}]
+  }).getByteArray(), (error, result) => {
     console.log(result)
-   })
-   ```
+  }
+)
+```
 
 <hr>
 
-#### JSOCTA<br>
+#### JSOCTA <br>
 - [ ] Support latest mapversion (version 29 is the only one documented)
 - [ ] Read and convert octa to .json
 - [x] Process and convert .json to octa

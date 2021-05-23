@@ -65,9 +65,7 @@ TextEditor.updateText(
 
 function writeOGZ(callback) {
 	TextEditor.parse((object) => {
-		new OctaMap(object).getOGZ((ogz) => {
-			callback(ogz);
-		});
+		callback(window.pako.gzip(new OctaMap(object).getByteArray()))
 	});
 }
 
