@@ -99,7 +99,7 @@ To create a subdivision in a child, add a new list within the previous list:
 ```
 Each list reduces the size of the cube in half, that is, a subdivision of a 512x512 cube will create 8 new 256x256 cubes within it.
 
-The gif below shows a size 10 map with its first "chunk" subdivided once.
+The gif below shows a size 10 map with its first "chunk" subdivided once.<br>
 ![](https://raw.githubusercontent.com/SalatielSauer/ogz-editor/master/images/octree2.gif)<br>
 The non-optimized structure (before remip or calclight) would look like:
 ```json
@@ -148,7 +148,20 @@ Undefined faces will inherit the last texture, to have an "allfaces" effect you 
 Cubes added without a texture property will inherit the last texture from the last cube.
   
 #### Corner Editing
-Detailed cube manipulation is not yet supported.
+Similar to textures, to manipulate corners you can set the `edges` property of the object:
+```js
+"geometry": [
+  {"solid": {
+    "edges": {
+      "top": [1, 2, 3, 4]
+    }
+  }}
+]
+```
+Each number is a corner of the face, the order of the corners are: upper-left upper-right lower-left lower-right.
+Each corner can be pushed a total of 8 times, 0 means no push.
+As a reference, you can find the front face when the origin box is in the lower left corner of the selection.<br>
+![](https://raw.githubusercontent.com/SalatielSauer/ogz-editor/master/images/corner-manipulation-1.png)<br>
 
 <hr>
 
@@ -245,7 +258,7 @@ zlib.gzip(
 <hr>
 
 #### JSOCTA <br>
-- [ ] Support latest mapversion (version 29 is the only one documented)
+- [x] Support mapversion 33
 - [ ] Read and convert octa to .json
 - [x] Process and convert .json to octa
   ###### Mapvars
@@ -258,10 +271,12 @@ zlib.gzip(
   ###### Octree
   - [x] Orderly Octree editing & Textures
   - [ ] Support cube insertion at a specific coordinate and size (the `OctaGeometry.insert()` method)
+  - [ ] Support for copying and pasting geometry chunks
   - [x] Fill undefined space with empty cubes
   - [x] Inherit last texture from previous added cube
-  - [ ] Complex shapes (edges/corners editing)
-  - [ ] Materials (alpha, clip, death, gameclip, lava, noclip, water) 
+  - [x] Complex shapes (edges/corners editing)
+  - [ ] Materials (alpha, clip, death, gameclip, lava, noclip, water)
+  - [ ] Virtual Slots
   - [ ] Lightmaps
   - [ ] Blendmaps
 

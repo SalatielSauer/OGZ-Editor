@@ -16,7 +16,15 @@ const dataTypes = {
 		"platform", "elevator",
 		"flag"
 	],
-	octree: ["children", "empty", "solid", "normal", "lodcube"]
+	octree: ["children", "empty", "solid", "normal", "lodcube"],
+	faces: [
+		{name: "front", edgepos: [2, 3, 0, 1], facepos: [1, 3, 5, 7]},
+		{name: "back", edgepos: [3, 2, 1, 0], facepos: [0, 2, 4, 6]},
+		{name: "right", edgepos: [2, 0, 3, 1], facepos: [8, 10, 12, 14]},
+		{name: "left", edgepos: [3, 1, 2, 0], facepos: [9, 11, 13, 15]},
+		{name: "top", edgepos: [2, 0, 3, 1], facepos: [16, 18, 20, 22]},
+		{name: "bottom", edgepos: [0, 2, 1, 3], facepos: [17, 19, 21, 23]}
+	]
 };
 
 class OctaMap {
@@ -162,6 +170,10 @@ class OctaGeometry {
 			);
 		}
 
+		if (properties.edges) {
+			cube = "normal";
+		};
+
 		if (!properties.textures) {
 			properties.textures = [];
 		};
@@ -177,11 +189,37 @@ class OctaGeometry {
 				return "00"; // subdivide child
 			case "empty":
 			case "solid":
-			case "normal":
 			case "lodcube":
 				// type + texture + mask
 				return (
 					_inttoHex(dataTypes["octree"].indexOf(cube), 2) +
+					properties.textures.map((tex) => _inttoHex(tex, 4)).join("")
+					//+ _inttoHex(properties.mask || 0, 2)
+				);
+			case "normal":
+				let normal = {
+					edges: {
+						front: [0, 0, 0, 0], back: [0, 0, 0, 0],
+						right: [0, 0, 0, 0], left: [0, 0, 0, 0],
+						top: [0, 0, 0, 0], bottom: [0, 0, 0, 0]
+					}
+				};
+
+				// known issue: cube disappears if the push level sum for corresponding corners of opposite faces exceeds 8
+				let faces = new Array(24);
+				dataTypes["faces"].forEach(face => {
+					let edge = properties.edges[face.name] || normal.edges[face.name];
+					edge = edge.concat(Array(4 - edge.length).fill(0)); // fill undefined edges with default value
+					face.facepos.forEach((facepos, index) => {
+						const pushLevel = Math.max(0, Math.min(8, edge[face.edgepos[index]]));
+						faces[facepos] = facepos % 2 ? pushLevel : 8 - pushLevel;
+					});
+				});
+
+				// type + edges + texture + mask
+				return (
+					_inttoHex(dataTypes["octree"].indexOf(cube), 2) +
+					faces.join("") +
 					properties.textures.map((tex) => _inttoHex(tex, 4)).join("")
 					//+ _inttoHex(properties.mask || 0, 2)
 				);

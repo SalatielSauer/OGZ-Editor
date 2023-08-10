@@ -40,8 +40,8 @@ TextEditor.updateText(
 	},
 	"entities": [
 		{"position": [512, 512, 530], "attributes": ["particles", 0, 0, 0, "0xFFF", 0]},
-		{"position": [512, 512, 512], "attributes": ["mapmodel", 180, 172, 0, 0, 0]},
-		{"position": [512, 512, 528], "attributes": ["mapmodel", 90, 177, 0, 0, 0]},
+		{"position": [512, 512, 512], "attributes": ["mapmodel", 0, 172, 0, 0, 0]},
+		{"position": [512, 512, 528], "attributes": ["mapmodel", 270, 177, 0, 0, 0]},
 		{"position": [240, 16, 512], "attributes": ["mapmodel", 0, 13, 0, 0, 0]},
 		{"position": [240, 16, 512], "attributes": ["jumppad", 16, 0, 0, 0, 0]},
 		{"position": [208, 16, 544], "attributes": ["mapmodel", 0, 161, 0, 0, 0]},
@@ -49,7 +49,7 @@ TextEditor.updateText(
 		{"position": [160, 32, 576], "attributes": ["mapmodel", 0, 160, 0, 0, 0]},
 		{"position": [160, 32, 576], "attributes": ["jumppad", 32, 0, 0, 0, 0]},
 		{"position": [64, 64, 640], "attributes": ["teleport", 2, 0, 0, 0, 0]},
-		{"position": [512, 448, 512], "attributes": ["teledest", 180, 2, 0, 0, 0]}
+		{"position": [512, 448, 512], "attributes": ["teledest", 0, 2, 0, 0, 0]}
 	],
 	"geometry": [
 		{"solid": {"textures": [1]}},
@@ -57,7 +57,13 @@ TextEditor.updateText(
 		"solid",
 		"solid",
 		[
-			[ {"solid": {"textures": [9]}}, [ {"solid": {"textures": [1, 2, 3, 4, 5, 6]}}, [ {"solid": {"textures": [842]}} ] ] ]
+			[ 
+				{"solid": {"textures": [9]}},
+				[
+					{"solid": {"textures": [1, 2, 3, 4, 5, 6], "edges": {"back": [2, 2, 2, 2], "left": [2, 0, 2], "right": [0, 2, 0, 2]}}},
+					[ {"solid": {"textures": [842]}} ]
+				]
+			 ]
 		]
 	]
 }`
