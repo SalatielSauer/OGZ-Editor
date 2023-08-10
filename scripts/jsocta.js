@@ -26,7 +26,7 @@ class OctaMap {
 		this.octree = object.geometry || [];
 		this.header = {
 			magic: "OCTA",
-			version: 29,
+			version: 33,
 			headersize: 36,
 			worldsize: object.mapsize || 1024,
 			numents: this.entities.length,
@@ -34,6 +34,7 @@ class OctaMap {
 			lightmaps: 0,
 			blendmap: 0,
 			numvars: Object.keys(this.mapvars).length,
+			numvslots: 0
 		};
 
 		Object.keys(this.header).forEach((key) => {
@@ -163,7 +164,7 @@ class OctaGeometry {
 
 		if (!properties.textures) {
 			properties.textures = [];
-		}
+		};
 
 		// inherits the last texture of the last cube if there is none
 		this.lasttexture = properties.textures[properties.textures.length - 1] || this.lasttexture;
@@ -181,8 +182,8 @@ class OctaGeometry {
 				// type + texture + mask
 				return (
 					_inttoHex(dataTypes["octree"].indexOf(cube), 2) +
-					properties.textures.map((tex) => _inttoHex(tex, 4)).join("") +
-					_inttoHex(properties.mask || 0, 2)
+					properties.textures.map((tex) => _inttoHex(tex, 4)).join("")
+					//+ _inttoHex(properties.mask || 0, 2)
 				);
 		}
 	}
