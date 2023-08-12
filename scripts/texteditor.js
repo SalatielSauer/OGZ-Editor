@@ -1,5 +1,5 @@
 /*
-	JSON editor that supports tab indentation, error feedback and syntax highlighting (highlight.js).
+	JSON editor that supports tab indentation, error feedback, and syntax highlighting (highlight.js).
 	by @SalatielSauer, licensed under ZLIB (https://www.zlib.net/zlib_license.html)
 */
 
@@ -17,6 +17,7 @@ class Editor {
 		};
 		this.editor.onkeyup = (event) => {
 			this.keylog.splice(this.keylog.indexOf(event.key), 1);
+			this.updateHighlight();
 		};
 		this.editor.onclick = this.editor.oninput = (event) => {
 			this.updateHighlight();
@@ -32,8 +33,35 @@ class Editor {
 	}
 
 	updateHighlight() {
-		this.highlight.innerHTML = this.editor.value;
+		const text = this.editor.value.split("");
+		const cursorPosition = this.editor.selectionStart - 1;
+		const bracket = text[cursorPosition];
+		const matchedBracket ={"[": "]", "{": "}", "]": "[", "}": "{"}[bracket];
+
+		if (matchedBracket) {
+			let counter = bracket === "[" || bracket === "{" ? 1 : -1;
+			let direction = bracket === "[" || bracket === "{" ? 1 : -1;
+			let i = cursorPosition + direction;
+
+			while (i >= 0 && i < text.length) {
+				if (text[i] === bracket) counter += direction;
+				if (text[i] === matchedBracket) counter -= direction;
+
+				if (counter === 0) {
+					const start = Math.min(cursorPosition, i);
+					const end = Math.max(cursorPosition, i);
+					text[end] = `</span><span class="highlight-block-bracket">${text[end]}</span>`;
+					text[start] = `<span class="highlight-block-bracket">${text[start]}</span><span class="highlight-block-content">`;
+					break;
+				}
+
+				i += direction;
+			}
+		}
+
+		this.highlight.innerHTML = text.join('');
 		hljs.highlightAll();
+
 		if (this.error.state) {
 			this.editor.style.zIndex = 1;
 			this.error.state = false;
@@ -111,7 +139,7 @@ class Editor {
 			}
 			this.error = {
 				state: true,
-				position: parseInt(error.message.match(/position (\d+)/)[1]),
+				position: parseInt(error.message.match(/position (\d+)/)[1])
 			};
 			this.editor.selectionStart = this.error.position;
 			this.editor.selectionEnd = this.error.position + 1;
@@ -133,18 +161,18 @@ class Editor {
 			this.editor.style.zIndex = 0;
 			return;
 		}
-		return callback(this.json);
+		return callback(this.editor.value, this.json); // stringifying the json prevents some weird behavior where objects become merged
 	}
 
 	format(indent = "\t") {
-		this.parse((object) => {
+		this.parse((string, object) => {
 			this.editor.value = JSON.stringify(object, (key, value) => {
 				if (Array.isArray(value) && !value.some((k) => k && (typeof k) == "object")) {
-				  return `\uE000${JSON.stringify(value.map((v) => (typeof v) == "string" ? v.replace(/"/g, "\uE001") : v))}\uE000`;
+					return `\uE000${JSON.stringify(value.map((v) => (typeof v) == "string" ? v.replace(/"/g, "\uE001") : v))}\uE000`;
 				}
 				return value;
 			}, indent).replace(/"\uE000([^\uE000]+)\uE000"/g, (match) => match.substr(2, match.length - 4).replace(/\\"/g, `"`).replace(/\uE001/g, `\\\"`).replace(/,/g, ", "));
-		    this.updateHighlight();
+			this.updateHighlight();
 		})
 	}
 }
@@ -170,6 +198,17 @@ async function writeFile(fileHandle, content) {
 	await writable.close();
 }
 
+async function readFile(fileHandle) {
+	const file = await fileHandle.getFile();
+	const reader = new FileReader();
+	return new Promise((resolve, reject) => {
+		reader.onload = (event) => resolve(event.target.result);
+		reader.onerror = (error) => reject(error);
+		reader.readAsText(file);
+	});
+}
+
+
 class FileSystem {
 	constructor() {
 		this.hasAccess = "showOpenFilePicker" in window;
@@ -194,5 +233,24 @@ class FileSystem {
 			return;
 		}
 		this.save(content, callback);
+	}
+	async importJson(callback = () => {}) {
+		try {
+			const fileHandle = await window.showOpenFilePicker({
+				types: [{
+					description: "JSON File",
+					accept: {
+						"application/json": [".json"]
+					}
+				}],
+				excludeAcceptAllOption: true,
+				multiple: false,
+			});
+			const content = await readFile(fileHandle[0]);
+			callback({"content": content, "name": fileHandle[0].name});
+		} catch (error) {
+			callback();
+			return;
+		}
 	}
 }

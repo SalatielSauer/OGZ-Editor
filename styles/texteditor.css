@@ -115,3 +115,15 @@
 	color: orange;
 	cursor: pointer;
 }
+
+.highlight-block-bracket {
+    background-color: #000000;
+    border-radius: 3px;
+    border-width: 1px;
+    color: chartreuse;
+}
+
+.highlight-block-content {
+    background-color: #00000045;
+    color: grey;
+}
