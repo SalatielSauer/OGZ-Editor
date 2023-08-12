@@ -1,4 +1,4 @@
-const version = "0.1";
+const version = "0.1.1";
 const cacheName = `ogzeditor-${version}`;
 self.addEventListener("install", (e) => {
 	e.waitUntil(
@@ -18,9 +18,16 @@ self.addEventListener("install", (e) => {
 });
 
 self.addEventListener("activate", (event) => {
-	event.waitUntil(self.clients.claim());
+	event.waitUntil(
+		caches.keys().then((keyList) => {
+			return Promise.all(keyList.map((key) => {
+				if (key !== cacheName) {
+					return caches.delete(key); // remove old caches
+				}
+			}));
+		})
+	);
 });
-
 self.addEventListener("fetch", (event) => {
 	event.respondWith(
 		caches.open(cacheName)
