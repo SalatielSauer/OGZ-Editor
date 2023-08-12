@@ -70,8 +70,8 @@ TextEditor.updateText(
 );
 
 function writeOGZ(callback) {
-	TextEditor.parse((object) => {
-		callback(window.pako.gzip(new OctaMap(object).getByteArray()))
+	TextEditor.parse((string) => {
+		callback(window.pako.gzip(new OctaMap(JSON.parse(string)).getByteArray()))
 	});
 }
 
