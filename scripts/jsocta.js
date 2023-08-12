@@ -58,7 +58,7 @@ class OctaMap {
 
 		this.mapvars = new OctaMapvars(this.mapvars).getString();
 		this.entities = new OctaEntities(this.entities).getString();
-		this.octree = new OctaGeometry(this.octree).getString();
+		this.octree = new OctaGeometry(this.octree, object.mapsize || 1024).getString();
 	}
 
 	getStringArray() {
@@ -157,9 +157,9 @@ class OctaEntities {
 }
 
 class OctaGeometry {
-	constructor(array) {
-		this.depth = 0;
-		this.array = array;
+	constructor(array = [], mapsize = 1024) {
+		this.array = array.concat(Array(8 - Math.min(8, array.length)).fill("empty"));
+		this.mapsize = mapsize;
 		this.lasttexture = 1;
 	}
 
@@ -172,11 +172,17 @@ class OctaGeometry {
 
 		if (properties.edges) {
 			cube = "normal";
-		};
+		} else {
+			// allows the addition of empty cubes at specific positions
+			if (properties.position && cube == "empty") {
+				cube = "normal";
+				properties["edges"] = {"top": [8, 8, 8, 8]};
+			}
+		}
 
 		if (!properties.textures) {
 			properties.textures = [];
-		};
+		}
 
 		// inherits the last texture of the last cube if there is none
 		this.lasttexture = properties.textures[properties.textures.length - 1] || this.lasttexture;
@@ -226,8 +232,23 @@ class OctaGeometry {
 		}
 	}
 
+	getOctree() {
+		// intercept the "prefab" object and remove it from the geometry array
+		const prefabIndex = this.array.findIndex(item => typeof item === "object" && "prefab" in item);
+		if (prefabIndex !== -1) {
+			let prefab = this.array[prefabIndex]["prefab"];
+			this.array.splice(prefabIndex, 1);
+			prefab.forEach(cube => {
+				let key = Object.keys(cube);
+				this.array = this.insert(cube, cube[key]);
+			});
+		}
+		return this.getChildren(this.array, 1);
+	}
+
 	getChildren(item, root = 0) {
 		if (Array.isArray(item)) {
+			item = item.slice(0, 8);
 			item = item.concat(Array(8 - item.length).fill("empty")); // fills undefined children with empty cubes
 			if (!root) {
 				item.splice(0, 0, "children"); // inserts children indicator
@@ -238,7 +259,7 @@ class OctaGeometry {
 	}
 
 	getStringArray() {
-		return this.getChildren(this.array, 1);
+		return this.getOctree();
 	}
 
 	getString() {
@@ -249,13 +270,33 @@ class OctaGeometry {
 		return _hextoByte(this.getString());
 	}
 
-	insert(child, start, end, maxdepth) {
-		if (this.depth < maxdepth) {
-			this.array = this.array[start] = [];
-			this.depth += 1;
-			return this.insert(child, 0, end, maxdepth);
+	insert(type = "solid", {position: [x, y, z], gridpower = 1}) {
+		let base_gridpower = (Math.log2(this.mapsize) | 0) - 1;
+		let level_difference = base_gridpower - gridpower;
+		function insert_cube(tree, idx, level) {
+			if (level === 0) {
+				tree[idx] = type;
+				return;
+			}
+			let child_idx = Math.floor(idx / Math.pow(2, 3 * level));
+			if (tree[child_idx] == "empty") {
+				tree[child_idx] = Array(8).fill("empty");
+			} else {
+				if (Array.isArray(tree[child_idx])) {
+					// handles the situation where a cube is added into an existing subdivision that does not have all children defined yet
+					tree[child_idx] = tree[child_idx].concat(Array(8 - tree[child_idx].length).fill("empty"));
+				} else {
+					// handles existing neighboring cubes by copying their parent's original properties when subdividing.
+					// has visible effect when trying to edit over a modified edge using a different gridpower
+					tree[child_idx] = Array(8).fill(tree[child_idx] || "empty");
+				}
+			}
+			insert_cube(tree[child_idx], idx % Math.pow(2, 3 * level), level - 1);
 		}
-		this.array[end] = child;
+		let tree = this.array.slice(0);
+		let index = getCubeIndex(x, y, z, gridpower);
+		insert_cube(tree, index, level_difference);
+		return tree;
 	}
 }
 
@@ -269,10 +310,10 @@ try {
 } catch (error) {}
 
 function _floattoHex(val) {
-	var getHex = i => ("00" + i.toString(16)).slice(-2)
-	var view = new DataView(new ArrayBuffer(4))
-	view.setFloat32(0, val)
-	return Array.apply(null, {length: 4}).map((_, i) => getHex(view.getUint8(i))).reverse().join("")
+	var getHex = i => ("00" + i.toString(16)).slice(-2);
+	var view = new DataView(new ArrayBuffer(4));
+	view.setFloat32(0, val);
+	return Array.apply(null, {length: 4}).map((_, i) => getHex(view.getUint8(i))).reverse().join("");
 }
 function _inttoHex(val, byte) {
 	return parseInt(val).toString(16).padStart(byte, "0").match(/.{2}/g).reverse().join("");
@@ -294,4 +335,26 @@ function _rgbtoShortHex(array) {
 }
 function getTypeofVar(val) {
 	return ((typeof val) == "number") ? (val == 0 || val%1 == 0) ? "integer" : "float" : "string";
+}
+// example: getCubeIndex(256, 256, 512, 8) // returns: 35
+function getCubeIndex(x, y, z, gridpower) {
+	let index = 0;
+	let size = 1 << gridpower; // Adding 1 to the gridpower to adjust the size
+	index += parseInt((x / size).toString(2), 8);
+	index += parseInt((y / size).toString(2), 8) * 2;
+	index += parseInt((z / size).toString(2), 8) * 4;
+	return index;
+}
+// example: getCubePos(35, 8) // returns: [256, 256, 512]
+function getCubePos(index, gridpower) {
+	let octal = index.toString(8);
+	let size = 1<<gridpower;
+	let position = [0, 0, 0];
+	for (i = 0; i < octal.length; i++) {
+		let digit = parseInt(octal[octal.length - i - 1], 8);
+		position[0] += (Math.floor(digit / 1) % 2) * (2 ** i) * size;
+		position[1] += (Math.floor(digit / 2) % 2) * (2 ** i) * size;
+		position[2] += (Math.floor(digit / 4) % 2) * (2 ** i) * size;
+	}
+	return position;
 }

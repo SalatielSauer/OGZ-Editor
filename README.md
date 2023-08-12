@@ -8,6 +8,7 @@ https://salatielsauer.github.io/OGZ-Editor/
   - [Entities](#entities)
   - [Octree Editing](#octree-editing)
     - [Subdivisions](#subdivisions)
+    - [Cube Positioning (prefab)](#cube-positioning)
     - [Textures](#textures)
     - [Corner Editing](#corner-editing)
 - [JSOCTA](#jsocta)
@@ -18,7 +19,15 @@ https://salatielsauer.github.io/OGZ-Editor/
     - [Browser](#browser-pakogzip)
     - [NodeJS](#nodejs-zlibgzip)
 
-### Map Variables
+## Updates (12/08/2023)
+- Cube corners can be manipulated with the `edges` property. ([Corner Editing >](#corner-editing))
+- Cubes can be placed in specific positions if defined inside the `prefab` array and have the `position` property set. ([Cube Positioning >](#cube-positioning))
+- Blocks in the editor are highlighted when their endpoints are selected.
+- The map is now read correctly having mapversion set to 33.
+
+<hr>
+
+## Map Variables
 To apply mapvars you must pay special attention to their types, strings must be enclosed in double quotes and RGB colors must be defined as arrays.
 ```json
 "mapvars": {
@@ -31,7 +40,7 @@ To apply mapvars you must pay special attention to their types, strings must be 
 }
 ```
 
-### Entities
+## Entities
 Entities have two array properties: `position` and `attributes`, the position receives the XYZ values and the attributes vary depending on the entity, but the first index is always its type.
 ```json
 "entities": [
@@ -55,7 +64,10 @@ For entity colors you can use the short hex string or an RGB array.
 ]
 ```
 
-### Octree Editing
+## Octree Editing
+
+![](https://raw.githubusercontent.com/SalatielSauer/ogz-editor/master/images/geometry-array.gif)<br>
+
 On a size 10 map (1024x1024) the standard subdivision consists of 8 smaller cubes of size 512x512, and each of them can be subdivided into 8 more cubes.
 
 The octree of a newmap has the following structure:
@@ -74,7 +86,7 @@ The octree of a newmap has the following structure:
 All children are divided into a lower and an upper layer, these layers consist of 4 cubes each.
 ![](https://raw.githubusercontent.com/SalatielSauer/ogz-editor/master/images/octree1.png)
 
-#### Subdivisions
+### Subdivisions
 To create a subdivision in a child, add a new list within the previous list:
 ```json
 "geometry": [
@@ -127,8 +139,35 @@ There are some tricks to reduce the number of children, so when executing `/remi
 
 Although Sauer requires the entire Octree filled, even with empty cubes, you don't have to worry about specifying them manually as shown above, **JSOCTA** will fill all the missing space.
 
-#### Textures
-To add textures you can create an object within the list and define its `textures` property:
+
+### Cube Positioning
+To add a cube at a specific position you can create an object containing the `prefab` array followed by the list of cubes and their `position` and `gridpower` properties.
+```js
+"geometry": [
+  {"prefab": [
+    {"solid": {
+      "position": [256, 256, 256],
+      "gridpower": 4
+    }}
+  ]}
+]
+```
+You can merge both the manually defined octree structure and the `prefab` array:
+```js
+"geometry": [
+  "solid", "solid", "solid", "solid",
+  {"prefab": [
+    {"solid": {
+      "position": [256, 256, 256],
+      "gridpower": 4
+    }}
+  ]}
+]
+```
+The object containing the `prefab` is not treated as part of the 8 items in the `geometry` array, so it can be added as a ninth item.
+
+### Textures
+To add textures you can create an object and define its `textures` property:
 ```js
 "geometry": [
   {"solid": {
@@ -147,7 +186,7 @@ Undefined faces will inherit the last texture, to have an "allfaces" effect you 
 ```
 Cubes added without a texture property will inherit the last texture from the last cube.
   
-#### Corner Editing
+### Corner Editing
 Similar to textures, to manipulate corners you can set the `edges` property of the object:
 ```js
 "geometry": [
@@ -270,7 +309,7 @@ zlib.gzip(
   - [ ] Support negative values of entity attributes
   ###### Octree
   - [x] Orderly Octree editing & Textures
-  - [ ] Support cube insertion at a specific coordinate and size (the `OctaGeometry.insert()` method)
+  - [x] Support cube insertion at a specific coordinate and size (the `OctaGeometry.insert()` method)
   - [ ] Support for copying and pasting geometry chunks
   - [x] Fill undefined space with empty cubes
   - [x] Inherit last texture from previous added cube
@@ -289,4 +328,4 @@ zlib.gzip(
 <hr>
 
 OGZ Editor & JSOCTA by Salatiel S.<br>
-Special thanks to [James Stanley](https://incoherency.co.uk/blog/) for his very helpful [**documentation**](http://web.archive.org/web/20201112035903/https://incoherency.co.uk/interest/sauer_map.html) regarding version 29 of the Sauerbraten map format.
+Special thanks to [James Stanley](https://incoherency.co.uk/blog/) (@jes) for his very helpful [**documentation**](http://web.archive.org/web/20201112035903/https://incoherency.co.uk/interest/sauer_map.html) regarding version 29 of the Sauerbraten map format.
