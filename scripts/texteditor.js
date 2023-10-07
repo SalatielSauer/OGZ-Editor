@@ -12,12 +12,12 @@ class Editor {
 		this.editor.onkeydown = (event) => {
 			if (!this.keylog.includes(event.key)) {
 				this.keylog.push(event.key);
-			}
+			};
 			this.interceptKeys(event);
 		};
 		this.editor.onkeyup = (event) => {
 			this.keylog.splice(this.keylog.indexOf(event.key), 1);
-			this.updateHighlight();
+			if (!this.state.error) this.updateHighlight();
 		};
 		this.editor.onclick = this.editor.oninput = (event) => {
 			this.updateHighlight();
@@ -36,7 +36,7 @@ class Editor {
 		const text = this.editor.value.split("");
 		const cursorPosition = this.editor.selectionStart - 1;
 		const bracket = text[cursorPosition];
-		const matchedBracket ={"[": "]", "{": "}", "]": "[", "}": "{"}[bracket];
+		const matchedBracket = {"[": "]", "{": "}", "]": "[", "}": "{"}[bracket];
 
 		if (matchedBracket) {
 			let counter = bracket === "[" || bracket === "{" ? 1 : -1;
@@ -131,6 +131,7 @@ class Editor {
 	parse(callback = () => {}) {
 		try {
 			this.json = JSON.parse(this.editor.value);
+			this.error.state = false;
 		} catch (error) {
 			if (!error.message.includes("position")) {
 				this.highlight.innerHTML = `<span class="highlight-feedback-bad">${this.editor.value}</span>`;
@@ -139,7 +140,8 @@ class Editor {
 			}
 			this.error = {
 				state: true,
-				position: parseInt(error.message.match(/position (\d+)/)[1])
+				position: parseInt(error.message.match(/position (\d+)/)[1]),
+				message: error.message
 			};
 			this.editor.selectionStart = this.error.position;
 			this.editor.selectionEnd = this.error.position + 1;
@@ -149,7 +151,7 @@ class Editor {
 				this.textSlice.left
 			}</span><span class="highlight-feedback-bad"><span class="highlight-feedback-token">${
 				this.textSelected
-			}</span><span class="highlight-feedback-message">${error.message
+			}</span><span class="highlight-feedback-message">${this.error.message
 				.replace("token \n", "new line").replace("in JSON ", "")
 			} <i id="icon-close-message" class="fas fa-times-circle"></i></span>${
 				this.textSlice.right
@@ -225,16 +227,19 @@ class FileSystem {
 		}
 		callback(this.fileHandle);
 	}
-	async saveAs(content, callback = () => {}) {
+
+	async saveAs(content, callback = () => {}, onLoading = () => {}) {
 		try {
 			this.fileHandle = await getNewFileHandle();
 		} catch (error) {
 			callback();
 			return;
 		}
+		onLoading();
 		this.save(content, callback);
 	}
-	async importJson(callback = () => {}) {
+
+	async importJson(callback = () => {}, onLoading = () => {}) {
 		try {
 			const fileHandle = await window.showOpenFilePicker({
 				types: [{
@@ -246,6 +251,7 @@ class FileSystem {
 				excludeAcceptAllOption: true,
 				multiple: false,
 			});
+			onLoading(fileHandle[0]);
 			const content = await readFile(fileHandle[0]);
 			callback({"content": content, "name": fileHandle[0].name});
 		} catch (error) {
@@ -253,4 +259,5 @@ class FileSystem {
 			return;
 		}
 	}
+
 }
