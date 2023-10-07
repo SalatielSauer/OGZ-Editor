@@ -19,6 +19,9 @@ https://salatielsauer.github.io/OGZ-Editor/
     - [Browser](#browser-pakogzip)
     - [NodeJS](#nodejs-zlibgzip)
 
+## Updates (07/10/2023)
+- A more simplified and faster version of the JSOCTA syntax is now available, to use it simply set the `version` property to 2.
+
 ## Updates (12/08/2023)
 - Cube corners can be manipulated with the `edges` property. ([Corner Editing >](#corner-editing))
 - Cubes can be placed in specific positions if defined inside the `prefab` array and have the `position` property set. ([Cube Positioning >](#cube-positioning))
@@ -41,6 +44,7 @@ To apply mapvars you must pay special attention to their types, strings must be 
 ```
 
 ## Entities
+#### Version 1:
 Entities have two array properties: `position` and `attributes`, the position receives the XYZ values and the attributes vary depending on the entity, but the first index is always its type.
 ```json
 "entities": [
@@ -63,8 +67,19 @@ For entity colors you can use the short hex string or an RGB array.
   }
 ]
 ```
+#### Version 2:
+With the `version` property set to 2, you can use the alternative syntax below for entities:
+```json
+"entities": [
+  {"x": 512, "y": 512, "z": 512, "t": 2, "at1": 23}
+]
+```
+This will add a single entity of type 2 ("mapmodel") with attribute 1 set to 2 (carrot) at position 512 512 512.
+
+The list of available entity properties are: `x y z t at0 at1 at2 at3 at4`, the [list of available types can be found here](https://github.com/SalatielSauer/OGZ-Editor/blob/master/scripts/mini-jsocta.js#L14).
 
 ## Octree Editing
+#### Version 1:
 
 ![](https://raw.githubusercontent.com/SalatielSauer/ogz-editor/master/images/geometry-array.gif)<br>
 
@@ -201,6 +216,21 @@ Each number is a corner of the face, the order of the corners are: upper-left up
 Each corner can be pushed a total of 8 times, 0 means no push.
 As a reference, you can find the front face when the origin box is in the lower left corner of the selection.<br>
 ![](https://raw.githubusercontent.com/SalatielSauer/ogz-editor/master/images/corner-manipulation-1.png)<br>
+
+#### Version 2:
+With the `version` property set to 2, you can use the alternative syntax below for octree manipulation:
+```json
+"geometry": [
+  {"g": 5, "x": 512, "y": 512, "z": 512, "ft1": 5, "af": 2}
+]
+```
+This will add a grass cube of gridpower 5 (`g`) with the top-right corner of the front face (`ft1`) pushed 5 times.<br>
+Some of the available properties for cubes are: `g t af tp bk lf rt dn ...`.<br>
+`g` defines the cube gridpower/size (0 = 1x1, 1 = 2x2, 2 = 4x4...);<br>
+`t` defines the cube type (1 "solid" by default);<br>
+`af` determine the texture index for all faces;<br>
+`tp` and all subsequent properties determine the texture index for that face;<br>
+faces can be followed by a corner index from 0 to 3, which determine its push level.
 
 <hr>
 

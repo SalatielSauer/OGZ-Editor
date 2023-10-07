@@ -41,49 +41,65 @@ const Time = new Date();
 // sample map
 TextEditor.updateText(
 	`{
-	"mapsize": 1024,
-	"mapvars": {
-		"skybox": "skyboxes/white",
-		"maptitle": "Untitled Map by OGZ Editor (${Time.getDate().toString().padStart(2, "0")}/${(Time.getMonth()+1).toString().padStart(2, "0")}/${Time.getFullYear()})",
-		"atmo": 1,
-		"sunlight": [255, 255, 255]
-	},
-	"entities": [
-		{"position": [512, 512, 530], "attributes": ["particles", 0, 0, 0, "0xFFF", 0]},
-		{"position": [512, 512, 512], "attributes": ["mapmodel", 0, 172, 0, 0, 0]},
-		{"position": [512, 512, 528], "attributes": ["mapmodel", 270, 177, 0, 0, 0]},
-		{"position": [240, 16, 512], "attributes": ["mapmodel", 0, 13, 0, 0, 0]},
-		{"position": [240, 16, 512], "attributes": ["jumppad", 16, 0, 0, 0, 0]},
-		{"position": [208, 16, 544], "attributes": ["mapmodel", 0, 161, 0, 0, 0]},
-		{"position": [208, 16, 544], "attributes": ["jumppad", 16, 0, 0, 0, 0]},
-		{"position": [160, 32, 576], "attributes": ["mapmodel", 0, 160, 0, 0, 0]},
-		{"position": [160, 32, 576], "attributes": ["jumppad", 32, 0, 0, 0, 0]},
-		{"position": [64, 64, 640], "attributes": ["teleport", 2, 0, 0, 0, 0]},
-		{"position": [512, 448, 512], "attributes": ["teledest", 0, 2, 0, 0, 0]}
-	],
-	"geometry": [
-		{"solid": {"textures": [1]}},
-		"solid",
-		"solid",
-		"solid",
-		[
-			[ 
-				{"solid": {"textures": [9]}},
-				[
-					{"solid": {"textures": [1, 2, 3, 4, 5, 6], "edges": {"back": [2, 2, 2, 2], "left": [2, 0, 2], "right": [0, 2, 0, 2]}}},
-					[ {"solid": {"textures": [842]}} ]
-				]
-			 ]
+	"version": 1,
+	"map": {
+		"mapsize": 1024,
+		"mapvars": {
+			"skybox": "skyboxes/white",
+			"maptitle": "Untitled Map by OGZ Editor (${Time.getDate().toString().padStart(2, "0")}/${(Time.getMonth()+1).toString().padStart(2, "0")}/${Time.getFullYear()})",
+			"atmo": 1,
+			"sunlight": [255, 255, 255]
+		},
+		"entities": [
+			{"position": [512, 512, 530], "attributes": ["particles", 0, 0, 0, "0xFFF", 0]},
+			{"position": [512, 512, 512], "attributes": ["mapmodel", 0, 172, 0, 0, 0]},
+			{"position": [512, 512, 528], "attributes": ["mapmodel", 270, 177, 0, 0, 0]},
+			{"position": [240, 16, 512], "attributes": ["mapmodel", 0, 13, 0, 0, 0]},
+			{"position": [240, 16, 512], "attributes": ["jumppad", 16, 0, 0, 0, 0]},
+			{"position": [208, 16, 544], "attributes": ["mapmodel", 0, 161, 0, 0, 0]},
+			{"position": [208, 16, 544], "attributes": ["jumppad", 16, 0, 0, 0, 0]},
+			{"position": [160, 32, 576], "attributes": ["mapmodel", 0, 160, 0, 0, 0]},
+			{"position": [160, 32, 576], "attributes": ["jumppad", 32, 0, 0, 0, 0]},
+			{"position": [64, 64, 640], "attributes": ["teleport", 2, 0, 0, 0, 0]},
+			{"position": [512, 448, 512], "attributes": ["teledest", 0, 2, 0, 0, 0]}
+		],
+		"geometry": [
+			{"solid": {"textures": [1]}},
+			"solid",
+			"solid",
+			"solid",
+			[
+				[ 
+					{"solid": {"textures": [9]}},
+					[
+						{"solid": {"textures": [1, 2, 3, 4, 5, 6], "edges": {"back": [2, 2, 2, 2], "left": [2, 0, 2], "right": [0, 2, 0, 2]}}},
+						[ {"solid": {"textures": [842]}} ]
+					]
+				 ]
+			]
 		]
-	]
+	}
 }`
 );
 
-function writeOGZ(callback) {
-	TextEditor.parse((string) => {
-		callback(window.pako.gzip(new OctaMap(JSON.parse(string)).getByteArray()))
+function getJSOCTAVersion(object) {
+	switch(object.version || 2) {
+		case 1: return OctaMap;
+		case 2: return QuickOGZ;
+	};
+}
+
+function jsonToOGZ(json) {
+	let JSOCTA = getJSOCTAVersion(json);
+	return window.pako.gzip(new JSOCTA(json.map || json).getByteArray());
+}
+
+function getOGZFromEditor(callback = ()=>{}) {
+	TextEditor.parse((string, json) => {
+		callback(jsonToOGZ(json));
 	});
 }
+
 
 function FS_updateFeedback(selectedFile) {
 	if (!FS.fileHandle || !selectedFile) {
@@ -94,17 +110,28 @@ function FS_updateFeedback(selectedFile) {
 	FS_fileName.textContent = selectedFile.name;
 }
 
-function FS_saveFile() {
+function FS_saveFile(file, callback = () => {}) {
 	if (!FS.hasAccess) {
 		FS_fileStatus.update(0, "fas fa-times", "OGZ Editor is not allowed to edit your files, try downloading instead.");
 		return;
-	}
-	writeOGZ((ogz) => {
-		FS_fileStatus.update(1, "", `${FS.fileHandle ? "Saving" : "Selecting"} file...`);
-		FS.save(ogz, (selectedFile) => {
-			FS_updateFeedback(selectedFile);
+	};
+
+	if (! file) {
+		getOGZFromEditor((ogz) => {
+			FS_fileStatus.update(1, "", `${FS.fileHandle ? "Saving" : "Selecting"} file...`);
+			FS.save(ogz, (selectedFile) => {
+				FS_updateFeedback(selectedFile);
+			});
 		});
-	});
+	} else {
+		FS.save(file, (selectedFile) => {
+			if (!selectedFile) {
+				callback();
+				return;	
+			}
+			callback(`${selectedFile.name} saved successfully.`);
+		});
+	}
 }
 
 function FS_saveFileAs() {
@@ -112,7 +139,7 @@ function FS_saveFileAs() {
 		FS_fileStatus.update(0, "fas fa-times", "OGZ Editor does not have access to the file picker.");
 		return;
 	}
-	writeOGZ((ogz) => {
+	getOGZFromEditor((ogz) => {
 		FS_fileStatus.update(1, "", "Selecting file...");
 		FS.saveAs(ogz, (selectedFile) => {
 			FS_updateFeedback(selectedFile);
@@ -141,7 +168,7 @@ addButton("#button-saveas", () => {
 });
 
 addButton("#button-download", () => {
-	writeOGZ((ogz) => {
+	getOGZFromEditor((ogz) => {
 		downloadFile(
 			"#button-download",
 			ogz,
