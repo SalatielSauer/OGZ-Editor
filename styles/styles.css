@@ -104,6 +104,12 @@ button:focus-visible,
 	transform: scale(0.95);
 }
 
+.element-stayin {
+	animation: element-fadein 0.3s;
+	pointer-events: auto !important;
+	filter: opacity(1);
+}
+
 .element-fadein {
 	animation: element-fadein 0.3s, processing 1s infinite linear;
 	filter: opacity(1);

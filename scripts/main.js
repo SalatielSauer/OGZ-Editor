@@ -15,8 +15,8 @@ class StatusFeedback {
 			let element_button = document.createElement(button.element || "button");
 			if (button.id) {
 				element_button.id = button.id;
-			}
-			element_button.textContent = button.text;
+			};
+			element_button.innerHTML = button.text;
 			element_button.addEventListener("click", (e) => button.onclick(e));
 			this.element.appendChild(element_button);
 		})
@@ -149,7 +149,7 @@ function FS_saveFileAs() {
 
 function downloadFile(element, content, selectedFile) {
 	var blob = new Blob([content], { type: "application/gzip" });
-	var element = document.querySelector(`${element} a`);
+	var element = document.querySelector(`${element}`);
 
 	if (window.navigator.msSaveBlob) {
 		navigator.msSaveBlob(blob, selectedFile);
@@ -170,7 +170,7 @@ addButton("#button-saveas", () => {
 addButton("#button-download", () => {
 	getOGZFromEditor((ogz) => {
 		downloadFile(
-			"#button-download",
+			"#button-download-a",
 			ogz,
 			FS.fileHandle ? FS.fileHandle.name : "mynewmap.ogz"
 		);
@@ -187,13 +187,77 @@ addButton("#button-validatejson", () => {
 	});
 });
 
+addButton("#button-importjson", () => {
+	function importJSON(callback = () => {}) {
+		let FS_callback = callback;
+		FS_fileStatus.update(1, "", "Selecting JSON to import...");
+		FS.importJson(file => {
+			if (file == undefined) {
+				FS_fileStatus.update(0, "fas fa-times", "Could not save file.");
+				return;
+			};
+			try {
+				ogz = jsonToOGZ(JSON.parse(file.content.replace(/,\s*([\]}])/g, '$1')));
+				FS_callback(ogz, file);
+			} catch (error) {
+				FS_fileStatus.update(0, "fas fa-times", "Bad JSON formatting, cannot convert to OGZ.");
+				alert(error);
+			};
+		}, (file) => {
+			FS_fileStatus.update(1, "", `Importing ${file.name}, may take a while...`);
+		})
+	}
+
+	const saveSelector = () => {
+		importJSON((ogz, file) => {
+			FS_fileStatus.update(1, "", `${file.name} imported successfully`, [{
+				"text": `<i class="fas fa-folder"></i> Select OGZ File to Save`,
+				"onclick": () => {
+					FS_fileStatus.update(1, "", `Selecting OGZ file...`)
+					FS.saveAs(ogz, status => {
+						FS_updateFeedback(status);
+					}, () => {
+						FS_fileStatus.update(1, "", `Saving OGZ file...`);
+					});
+				}
+			}, {
+				"element": "a", "text": `<i class="fas fa-download"></i> Download OGZ File`, "id": "importJson-download", "onclick": (e) => {
+					downloadFile(
+						"#importJson-download",
+						ogz,
+						"mynewmap.ogz"
+					);
+				}
+			}])
+		})
+	}
+
+	if (FS.fileHandle) {
+		FS_fileStatus.update(1, "", `${FS.fileHandle.name} is selected, would you like to:`, [
+			{"text": `<i class="fas fa-save"></i> Import JSON & Save ${FS.fileHandle.name}`, "onclick": () => {
+				importJSON((json) => {
+					FS_fileStatus.update(1, "", `Saving ${FS.fileHandle.name}...`);
+					FS_saveFile(json, status => {
+						FS_updateFeedback(status);
+					});
+				});
+			}},
+			{"text": `<i class="fas fa-folder"></i> Import JSON & Save As...`, "onclick": () => {
+				saveSelector();
+			}}
+		]);
+	} else {
+		saveSelector();
+	};
+});
+
 const pageKeylog = []
 document.body.addEventListener("keydown", (event) => {
 	if (!pageKeylog.includes(event.key)) {pageKeylog.push(event.key)}
 	if (event.key == "s" && (pageKeylog.includes("Control") || TextEditor.keylog.includes("Control"))) {
 		event.preventDefault();
 		FS_saveFile();
-	}
+	};
 });
 
 document.body.addEventListener("keyup", (event) => {
