@@ -3,15 +3,25 @@ class StatusFeedback {
 		this.element = document.querySelector(element);
 	}
 
-	update(state, icon, text) {
+	update(state, icon, text, buttons = []) {
 		// reset animations
 		this.elementBuff = this.element;
 		this.element.parentNode.replaceChild(this.element, this.elementBuff);
 		this.icon = icon || "";
 		this.text = text || "";
 		this.state = state || 0;
-		this.element.innerHTML = `<i class="${this.icon}"></i> ${this.text}`;
-		this.element.className = this.state ? "element-fadein" : "element-fadeout";
+		this.element.innerHTML = `<i class="${this.icon}"></i> ${this.text}${buttons.length ? "<br>" : ""}`;
+		buttons.forEach(button => {
+			let element_button = document.createElement(button.element || "button");
+			if (button.id) {
+				element_button.id = button.id;
+			}
+			element_button.textContent = button.text;
+			element_button.addEventListener("click", (e) => button.onclick(e));
+			this.element.appendChild(element_button);
+		})
+		this.element.classList.remove("element-fadein", "element-fadeout", "element-stayin");
+		this.element.classList.add(this.state ? (buttons.length ? "element-stayin" : "element-fadein") : "element-fadeout");
 	}
 }
 
