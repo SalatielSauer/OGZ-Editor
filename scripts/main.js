@@ -3,40 +3,65 @@ class StatusFeedback {
 		this.element = document.querySelector(element);
 	}
 
-	update(state, icon, text, buttons = []) {
+	update(state, text, icon, buttons = []) {
 		// reset animations
 		this.elementBuff = this.element;
 		this.element.parentNode.replaceChild(this.element, this.elementBuff);
-		this.icon = icon || "";
-		this.text = text || "";
+		this.icon = icon || '';
+		this.text = text || '';
 		this.state = state || 0;
-		this.element.innerHTML = `<i class="${this.icon}"></i> ${this.text}${buttons.length ? "<br>" : ""}`;
+		this.element.innerHTML = `<i class='${this.icon}'></i> ${this.text}${buttons.length ? '<br>' : ''}`;
 		buttons.forEach(button => {
-			let element_button = document.createElement(button.element || "button");
+			let element_button = document.createElement(button.element || 'button');
 			if (button.id) {
 				element_button.id = button.id;
-			};
+			}
 			element_button.innerHTML = button.text;
-			element_button.addEventListener("click", (e) => button.onclick(e));
+			element_button.addEventListener('click', (e) => button.onclick(e));
 			this.element.appendChild(element_button);
-		})
-		this.element.classList.remove("element-fadein", "element-fadeout", "element-stayin");
-		this.element.classList.add(this.state ? (buttons.length ? "element-stayin" : "element-fadein") : "element-fadeout");
+		});
+		this.element.classList.remove('element-fadein', 'element-fadeout', 'element-stayin');
+		this.element.classList.add(this.state ? (buttons.length ? 'element-stayin' : 'element-fadein') : 'element-fadeout');
 	}
 }
 
 function addButton(selector, onclick) {
 	let element = document.querySelector(selector);
 	element.onclick = (event) => {
-		onclick();
+		onclick(event);
 	};
 }
 
-const TextEditor = new Editor("#editor", "#highlight-content");
+const TextEditor = new Editor('#editor', '#highlight-content');
 const FS = new FileSystem();
-const FS_fileName = document.querySelector("#filesystem-file");
-const FS_fileStatus = new StatusFeedback("#filesystem-status");
+const FS_fileName = document.querySelector('#filesystem-file');
+const FS_fileStatus = new StatusFeedback('#filesystem-status');
 const Time = new Date();
+let fileImport = {};
+
+const worker = new Worker('scripts/jsocta-worker.js');
+worker.onmessage = function(event) {
+	const message = event.data;
+
+	switch(message.type) {
+		case -1:
+			console.error("Could not parse JSON correctly.");
+			FS_fileStatus.update(0, `Something went wrong.`, 'fas fa-times');
+			break;
+		case 0:
+			FS_fileStatus.update(1, `${message.body}`, 'fas fa-spinner fa-spin');
+			break;
+		case 1:
+			fileImport = message.body.fileImport;
+			FS_fileStatus.update(0, `Done, OGZ file is ready.`, 'fas fa-check-circle');
+
+			if ('callback' in worker) {
+				worker.callback(fileImport);
+				worker.callback = () => {};
+			}
+			break;
+	}
+};
 
 // sample map
 TextEditor.updateText(
@@ -82,184 +107,112 @@ TextEditor.updateText(
 }`
 );
 
-function getJSOCTAVersion(object) {
-	switch(object.version || 2) {
-		case 1: return OctaMap;
-		case 2: return QuickOGZ;
-	};
+function jsonToOGZ(string) {
+	worker.postMessage({'type': 0, 'body': {'content': string}});
 }
 
-function jsonToOGZ(json) {
-	let JSOCTA = getJSOCTAVersion(json);
-	return window.pako.gzip(new JSOCTA(json.map || json).getByteArray());
-}
-
-function getOGZFromEditor(callback = ()=>{}) {
-	TextEditor.parse((string, json) => {
-		callback(jsonToOGZ(json));
-	});
-}
-
-
-function FS_updateFeedback(selectedFile) {
+function updateFileFeedback(selectedFile) {
 	if (!FS.fileHandle || !selectedFile) {
-		FS_fileStatus.update(0, "fas fa-times", "Could not save file.");
+		FS_fileStatus.update(0, 'Could not save file.', 'fas fa-times');
 		return;
 	}
-	FS_fileStatus.update(0, "fas fa-check-circle", "File saved successfully.");
-	FS_fileName.textContent = selectedFile.name;
+	FS_fileStatus.update(0, 'File saved successfully.', 'fas fa-check-circle');
+	FS_fileName.textContent = FS.fileHandle.name;
 }
 
-function FS_saveFile(file, callback = () => {}) {
-	if (!FS.hasAccess) {
-		FS_fileStatus.update(0, "fas fa-times", "OGZ Editor is not allowed to edit your files, try downloading instead.");
-		return;
-	};
+function saveFile(override = true) {
+	FS_fileStatus.update(1, `${FS.fileHandle && override ? 'Saving' : 'Selecting'} OGZ file...`, 'fas fa-spinner fa-spin');
 
-	if (! file) {
-		getOGZFromEditor((ogz) => {
-			FS_fileStatus.update(1, "", `${FS.fileHandle ? "Saving" : "Selecting"} file...`);
-			FS.save(ogz, (selectedFile) => {
-				FS_updateFeedback(selectedFile);
+	switch(override) {
+		case false:
+			FS.saveAs(fileImport.GZIP, (selectedFile) => {
+				updateFileFeedback(selectedFile);
+			}, () => {
+				FS_fileStatus.update(1, `Saving OGZ file...`, 'fas fa-spinner fa-spin');
 			});
-		});
+			break;
+		case true:
+			FS.save(fileImport.GZIP, (selectedFile) => {
+				updateFileFeedback(selectedFile);
+			}, () => {
+				FS_fileStatus.update(1, `Saving OGZ file...`, 'fas fa-spinner fa-spin');
+			});
+			break;
+	}
+}
+
+addButton('#button-save', () => {
+	if (fileImport.GZIP && window['checkbox-useimportedjson'].checked) {
+		saveFile();
 	} else {
-		FS.save(file, (selectedFile) => {
-			if (!selectedFile) {
-				callback();
-				return;	
-			}
-			callback(`${selectedFile.name} saved successfully.`);
-		});
-	}
-}
+		window['checkbox-useimportedjson'].disabled = true;
+		jsonToOGZ(TextEditor.editor.value);
+		worker.callback = () => {
+			saveFile();
+		};
+	};
+});
 
-function FS_saveFileAs() {
-	if (!FS.hasAccess) {
-		FS_fileStatus.update(0, "fas fa-times", "OGZ Editor does not have access to the file picker.");
-		return;
-	}
-	getOGZFromEditor((ogz) => {
-		FS_fileStatus.update(1, "", "Selecting file...");
-		FS.saveAs(ogz, (selectedFile) => {
-			FS_updateFeedback(selectedFile);
-		});
-	});
-}
-
-function downloadFile(element, content, selectedFile) {
-	var blob = new Blob([content], { type: "application/gzip" });
-	var element = document.querySelector(`${element}`);
-
-	if (window.navigator.msSaveBlob) {
-		navigator.msSaveBlob(blob, selectedFile);
+addButton('#button-saveas', () => {
+	if (fileImport.GZIP && window['checkbox-useimportedjson'].checked) {
+		saveFile(false);
 	} else {
-		element.setAttribute("download", selectedFile);
-		element.setAttribute("href", URL.createObjectURL(blob));
-	}
-}
-
-addButton("#button-save", () => {
-	FS_saveFile();
+		window['checkbox-useimportedjson'].disabled = true;
+		worker.callback = () => {
+			saveFile(false);
+		};
+		jsonToOGZ(TextEditor.editor.value);
+	};
 });
 
-addButton("#button-saveas", () => {
-	FS_saveFileAs();
-});
-
-addButton("#button-download", () => {
-	getOGZFromEditor((ogz) => {
-		downloadFile(
-			"#button-download-a",
-			ogz,
-			FS.fileHandle ? FS.fileHandle.name : "mynewmap.ogz"
-		);
-	});
-});
-
-addButton("#button-formatjson", () => {
+addButton('#button-formatjson', () => {
 	TextEditor.format();
 });
 
-addButton("#button-validatejson", () => {
+addButton('#button-validatejson', () => {
 	TextEditor.parse((object) => {
-		FS_fileStatus.update(0, "fas fa-check-circle", "Good to go!");
+		FS_fileStatus.update(0, 'Good to go!', 'fas fa-check-circle');
 	});
 });
 
-addButton("#button-importjson", () => {
-	function importJSON(callback = () => {}) {
-		let FS_callback = callback;
-		FS_fileStatus.update(1, "", "Selecting JSON to import...");
-		FS.importJson(file => {
-			if (file == undefined) {
-				FS_fileStatus.update(0, "fas fa-times", "Could not save file.");
+addButton('#button-importjson', (event) => {
+	FS_fileStatus.update(1, `Selecting JSON file...`, 'fas fa-spinner fa-spin');
+	FS.importJson(file => {
+		if (! file) {
+			FS_fileStatus.update(0, 'Could not select file.', 'fas fa-times');
+			return;
+		}
+		event.target.disabled = true;
+		jsonToOGZ(file.content);
+		worker.callback = () => {
+			event.target.disabled = false;
+			window['checkbox-useimportedjson'].disabled = false;
+			if (FS.fileHandle) {
+				saveFile();
 				return;
 			};
-			try {
-				ogz = jsonToOGZ(JSON.parse(file.content.replace(/,\s*([\]}])/g, '$1')));
-				FS_callback(ogz, file);
-			} catch (error) {
-				FS_fileStatus.update(0, "fas fa-times", "Bad JSON formatting, cannot convert to OGZ.");
-				alert(error);
-			};
-		}, (file) => {
-			FS_fileStatus.update(1, "", `Importing ${file.name}, may take a while...`);
-		})
-	}
 
-	const saveSelector = () => {
-		importJSON((ogz, file) => {
-			FS_fileStatus.update(1, "", `${file.name} imported successfully`, [{
-				"text": `<i class="fas fa-folder"></i> Select OGZ File to Save`,
-				"onclick": () => {
-					FS_fileStatus.update(1, "", `Selecting OGZ file...`)
-					FS.saveAs(ogz, status => {
-						FS_updateFeedback(status);
-					}, () => {
-						FS_fileStatus.update(1, "", `Saving OGZ file...`);
-					});
-				}
-			}, {
-				"element": "a", "text": `<i class="fas fa-download"></i> Download OGZ File`, "id": "importJson-download", "onclick": (e) => {
-					downloadFile(
-						"#importJson-download",
-						ogz,
-						"mynewmap.ogz"
-					);
-				}
-			}])
-		})
-	}
-
-	if (FS.fileHandle) {
-		FS_fileStatus.update(1, "", `${FS.fileHandle.name} is selected, would you like to:`, [
-			{"text": `<i class="fas fa-save"></i> Import JSON & Save ${FS.fileHandle.name}`, "onclick": () => {
-				importJSON((json) => {
-					FS_fileStatus.update(1, "", `Saving ${FS.fileHandle.name}...`);
-					FS_saveFile(json, status => {
-						FS_updateFeedback(status);
-					});
-				});
-			}},
-			{"text": `<i class="fas fa-folder"></i> Import JSON & Save As...`, "onclick": () => {
-				saveSelector();
-			}}
-		]);
-	} else {
-		saveSelector();
-	};
+			FS_fileStatus.update(1, `${file.name} is imported.`, 'fas fa-file', [
+				{'text': '<i class="fas fa-save"></i> Save OGZ', 'onclick': () => {
+					saveFile();
+				}}
+			]);
+		};
+	});
 });
 
-const pageKeylog = []
-document.body.addEventListener("keydown", (event) => {
+const pageKeylog = [];
+document.body.addEventListener('keydown', (event) => {
 	if (!pageKeylog.includes(event.key)) {pageKeylog.push(event.key)}
-	if (event.key == "s" && (pageKeylog.includes("Control") || TextEditor.keylog.includes("Control"))) {
+	if (event.key === 's' && (pageKeylog.includes('Control') || TextEditor.keylog.includes('Control'))) {
 		event.preventDefault();
-		FS_saveFile();
+		jsonToOGZ(TextEditor.parse());
+		worker.callback = () => {
+			saveFile();
+		};
 	};
 });
 
-document.body.addEventListener("keyup", (event) => {
-	pageKeylog.splice(pageKeylog.indexOf(event.key), 1)
-})
+document.body.addEventListener('keyup', (event) => {
+	pageKeylog.splice(pageKeylog.indexOf(event.key), 1);
+});

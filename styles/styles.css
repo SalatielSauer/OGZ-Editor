@@ -48,6 +48,11 @@
 	font-size: 15px;
 }
 
+label {
+	color: white;
+	font-size: smaller;
+}
+
 a {
 	color: #2991e4;
 	cursor: pointer;
@@ -91,6 +96,11 @@ button,
 button:active {
 	background-color: #1f1629 !important;
 	transform: scale(1) !important;
+}
+
+button:disabled {
+    pointer-events: none;
+    filter: brightness(0.5);
 }
 
 button:hover,

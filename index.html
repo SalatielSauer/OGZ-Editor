@@ -14,9 +14,9 @@
 		<script src="pwapp.js"></script>
 		<script src="https://kit.fontawesome.com/03a1634190.js" crossorigin="anonymous"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-		<script src="scripts/jsocta.js"></script>
-		<script src="scripts/mini-jsocta.js"></script>
+		<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>-->
+		<!--<<script src="scripts/jsocta.js"></script>-->
+		<!--<script src="scripts/mini-jsocta.js"></script>-->
 		<script src="scripts/texteditor.js" defer></script>
 		<script src="scripts/main.js" defer></script>
 	</head>
@@ -27,11 +27,12 @@
 					<h2 class="submenu-button"><i class="fas fa-plus"></i></h2>
 					<div class="submenu-content">
 						<h2 id="filesystem-file">No file selected</h2>
+						<label><input type="checkbox" id="checkbox-useimportedjson" disabled></input>Imported JSON</label><br>
 						<button id="button-save" title="CTRL+S"><i class="fas fa-save"></i> Save OGZ</button><br>
 						<!--<p>CTRL+S</p>-->
 						<button id="button-saveas"><i class="fas fa-folder"></i> Save As...</button><br>
 						<!--<p>CTRL+SHIFT+S</p>-->
-						<button id="button-download"><a id="button-download-a"><i class="fas fa-download"></i> Download</a></button>
+						<!--<button id="button-download"><a id="button-download-a"><i class="fas fa-download"></i> Download</a></button>-->
 					</div>
 				</div>
 				<button id="button-validatejson"><i class="fas fa-search"></i> Validate JSON</button>
@@ -56,8 +57,9 @@
 		</div>
 		<script>
 			if ("serviceWorker" in navigator) {
-				navigator.serviceWorker.register("/OGZ-Editor/pwapp.js", {scope: "/OGZ-Editor/"})
-			}
+				const basePath = location.href.replace(/\/[^\/]+$/, "");
+				navigator.serviceWorker.register(`${basePath}pwapp.js`, { scope: basePath });
+			};
 		</script>
 	</body>
 </html>
