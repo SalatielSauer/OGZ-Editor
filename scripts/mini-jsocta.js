@@ -37,11 +37,11 @@ class QuickOGZ {
 
 	format_mapvars() {
 		return Object.keys(this.mapvars).map((key, index) => {
-			let mapvar = {name: key, value: Object.values(this.mapvars)[index]}
+			let mapvar = {name: key, value: Object.values(this.mapvars)[index]};
 			// treats array values as RGB and converts it to decimal
 			if (typeof mapvar.value == "object") {
 				mapvar.value = this._CTI(mapvar.value);
-			}
+			};
 			mapvar.type = this.getTypeofVar(mapvar.value);
 			// int/float: type + name length + name + value
 			//   string: type + name length + name + value length + value
@@ -67,14 +67,6 @@ class QuickOGZ {
 		let cubes = this.octree;
 		let mapsize = this.mapsize;
 		let _IH = this._IH;
-		function getCubeIndex(x, y, z, gridpower) {
-			let index = 0;
-			let size = 1 << gridpower; // Adding 1 to the gridpower to adjust the size
-			index += parseInt((x / size).toString(2), 8);
-			index += parseInt((y / size).toString(2), 8) * 2;
-			index += parseInt((z / size).toString(2), 8) * 4;
-			return index;
-		}
 		function subdivide(item, root = 0) {
 			if (Array.isArray(item)) {
 				item = item.concat(Array(8 - item.length).fill({t: 1})); // fills undefined children with empty cubes
@@ -95,7 +87,8 @@ class QuickOGZ {
 					tree[idx] = type;
 					return;
 				}
-				let child_idx = Math.floor(idx / Math.pow(2, 3 * level));
+				const powValue = Math.pow(2, 3 * level);
+				let child_idx = Math.floor(idx / powValue);
 				if (tree[child_idx] == {t: 1}) {
 					tree[child_idx] = Array(8).fill({t: 1});
 				} else {
@@ -103,29 +96,29 @@ class QuickOGZ {
 						// handles the situation where a cube is added into an existing subdivision that does not have all children defined yet
 						tree[child_idx] = tree[child_idx].concat(Array(8 - tree[child_idx].length).fill({t: 1}));
 					} else {
-						// handles existing neighboring cubes by copying their parent's original properties when subdividing.
+						// handles existing neighboring cubes by copying their parent's original properties when subdividing,
 						// has visible effect when trying to edit over a modified edge using a different gridpower
 						tree[child_idx] = Array(8).fill(tree[child_idx] || {t: 1});
 					}
 				}
-				insert_cube(tree[child_idx], idx % Math.pow(2, 3 * level), level - 1);
+				insert_cube(tree[child_idx], idx % powValue, level - 1);
 			}
 			let tree = octree.slice(0, 8);
-			let index = getCubeIndex(x, y, z, gridpower);
+			let index = `${parseInt((x / (1 << gridpower)).toString(2), 8)+parseInt((y / (1 << gridpower)).toString(2), 8) * 2+parseInt((z / (1 << gridpower)).toString(2), 8) * 4}`;
 			insert_cube(tree, index, level_difference);
 			return tree;
 		}
 
 		cubes.forEach(cube => {
-			octree = insert(cube, cube.x||0, cube.y||0, cube.z||0, cube.g||9);
-		})
+			octree = insert(cube, cube.x||0, cube.y||0, cube.z||0, cube.g||0);
+		});
 		
 		return subdivide(octree, 1);
 	}
 
 	_FTH(val) {
-		var getHex = i => ("00" + i.toString(16)).slice(-2);
-		var view = new DataView(new ArrayBuffer(4));
+		const getHex = i => `00${i.toString(16)}`.slice(-2);
+		const view = new DataView(new ArrayBuffer(4));
 		view.setFloat32(0, val);
 		return Array.apply(null, {length: 4}).map((_, i) => getHex(view.getUint8(i))).reverse().join("");
 	}
@@ -145,7 +138,14 @@ class QuickOGZ {
 	  }
 	  return result;
 	}
-	_STH(val) {return val.split("").reduce((hex,c)=>hex+=c.charCodeAt(0).toString(16).padStart(2,"0"),"");}
+	//_STH(val) {return val.split("").reduce((hex,c)=>hex+=c.charCodeAt(0).toString(16).padStart(2,"0"),"");}
+	_STH(val) {
+		let hex = '';
+		for (const c of val) {
+			hex += c.charCodeAt(0).toString(16).padStart(2, "0");
+		}
+		return hex;
+	}
 	_CTI(array) {return array[0] * (256*256) + array[1] * 256 + array[2];}
 	_CTH(array) {return ((1 << 24) + (array[0] << 16) + (array[1] << 8) + array[2]).toString(16).slice(1);}
 	_CTSH(array) {return "0x" + this._CTH([Math.round(array[0]/17), Math.round(array[1]/17), Math.round(array[2]/17)]).slice(1).replace(/(.{1})./g, "$1").toUpperCase();}
