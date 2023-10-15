@@ -17,7 +17,7 @@ class Editor {
 		};
 		this.editor.onkeyup = (event) => {
 			this.keylog.splice(this.keylog.indexOf(event.key), 1);
-			if (!this.state.error) this.updateHighlight();
+			if (!this.error.state) this.updateHighlight();
 		};
 		this.editor.onclick = this.editor.oninput = (event) => {
 			this.updateHighlight();
@@ -163,7 +163,8 @@ class Editor {
 			this.editor.style.zIndex = 0;
 			return;
 		}
-		return callback(this.editor.value, this.json); // stringifying the json prevents some weird behavior where objects become merged
+		callback(this.editor.value, this.json); // stringifying the json prevents some weird behavior where objects become merged
+		return this.json;
 	}
 
 	format(indent = "\t") {
@@ -215,16 +216,16 @@ class FileSystem {
 	constructor() {
 		this.hasAccess = "showOpenFilePicker" in window;
 	}
-	async save(content, callback = () => {}) {
+	async save(content, callback = () => {}, onLoading = () => {}) {
 		if (!this.fileHandle) {
-			return await this.saveAs(content, callback);
-		}
+			return await this.saveAs(content, callback, onLoading);
+		};
 		try {
 			await writeFile(this.fileHandle, content);
 		} catch (error) {
-			callback();
+			console.error(error);
 			return;
-		}
+		};
 		callback(this.fileHandle);
 	}
 
@@ -232,6 +233,7 @@ class FileSystem {
 		try {
 			this.fileHandle = await getNewFileHandle();
 		} catch (error) {
+			console.log(error)
 			callback();
 			return;
 		}
@@ -251,12 +253,11 @@ class FileSystem {
 				excludeAcceptAllOption: true,
 				multiple: false,
 			});
-			onLoading(fileHandle[0]);
+			//onLoading(fileHandle[0]);
 			const content = await readFile(fileHandle[0]);
 			callback({"content": content, "name": fileHandle[0].name});
 		} catch (error) {
 			callback();
-			return;
 		}
 	}
 
