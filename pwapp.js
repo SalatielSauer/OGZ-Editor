@@ -1,10 +1,10 @@
-const version = "0.1.4";
+const version = "0.1.4.1";
 const cacheName = `ogzeditor-${version}`;
+console.log("running", cacheName);
 self.addEventListener("install", (e) => {
 	e.waitUntil(
 		caches.open(cacheName).then((cache) => {
 			return cache.addAll([
-				"/OGZ-Editor/",
 				"/OGZ-Editor/index.html",
 				"/OGZ-Editor/styles/styles.css",
 				"/OGZ-Editor/styles/texteditor.css",
