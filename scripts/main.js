@@ -45,8 +45,15 @@ worker.onmessage = function(event) {
 
 	switch(message.type) {
 		case -1:
-			console.error("Could not parse JSON correctly.");
-			FS_fileStatus.update(0, `Something went wrong.`, 'fas fa-times');
+			if (message.body.toString().includes("RangeError")) {
+				FS_fileStatus.update(1, `Trying to adjust mapsize to contain out-of-bounds cubes..`, 'fas fa-spinner fa-spin');
+				worker.postMessage({'type': 1});
+			} else {
+				console.error("Could not parse JSON correctly.", message.body);
+				FS_fileStatus.update(0, `Something went wrong.`, 'fas fa-times');
+				alert(message.body);
+				window['checkbox-useimportedjson'].disabled = false;
+			}
 			break;
 		case 0:
 			FS_fileStatus.update(1, `${message.body}`, 'fas fa-spinner fa-spin');
