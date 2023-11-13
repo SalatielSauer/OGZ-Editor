@@ -58,7 +58,24 @@
 		<script>
 			if ("serviceWorker" in navigator) {
 				const basePath = location.href.replace(/\/[^\/]+$/, "");
-				navigator.serviceWorker.register(`${basePath}pwapp.js`, { scope: basePath });
+				navigator.serviceWorker.register(`${basePath}pwapp.js`, { scope: basePath })
+				.then(reg => {
+					reg.addEventListener("updatefound", () => {
+						const newWorker = reg.installing;
+						newWorker.addEventListener("statechange", () => {
+							if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+								console.log("New OGZ-Editor version is available; please refresh.");
+								FS_fileStatus.update(1, `Checking new version...`, "fas fa-spinner fa-spin");
+							}
+						});
+					});
+				});
+				navigator.serviceWorker.addEventListener("message", (event) => {
+					if (event.data.type === 1) {
+						FS_fileStatus.update(1, `Updating OGZ Editor to ${event.data.body}...`, "fas fa-spinner fa-spin");
+						window.location.reload();
+					}
+				});
 			};
 		</script>
 	</body>
