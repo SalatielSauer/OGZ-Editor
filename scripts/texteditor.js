@@ -203,11 +203,24 @@ async function writeFile(fileHandle, content) {
 
 async function readFile(fileHandle) {
 	const file = await fileHandle.getFile();
-	const reader = new FileReader();
+	const stream = file.stream();
+	const reader = stream.getReader();
+	let result = new Uint8Array();
+
 	return new Promise((resolve, reject) => {
-		reader.onload = (event) => resolve(event.target.result);
-		reader.onerror = (error) => reject(error);
-		reader.readAsText(file);
+		reader.read().then(function process({done, value}) {
+			if (done) {
+				resolve(result);
+				return;
+			}
+
+			let tmp = new Uint8Array(result.length + value.length);
+			tmp.set(result, 0);
+			tmp.set(value, result.length);
+			result = tmp;
+
+			return reader.read().then(process);
+		}).catch(reject);
 	});
 }
 
@@ -255,7 +268,8 @@ class FileSystem {
 			});
 			//onLoading(fileHandle[0]);
 			const content = await readFile(fileHandle[0]);
-			callback({"content": content, "name": fileHandle[0].name});
+			const text = new TextDecoder().decode(content);
+			callback({"content": text, "name": fileHandle[0].name});
 		} catch (error) {
 			callback();
 		}
