@@ -114,6 +114,12 @@ button:focus-visible,
 	transform: scale(0.95);
 }
 
+.drag-over {
+	border-color: aqua;
+	border-style: dashed;
+	transition: border-color 0.5s, border-style 0.5s;
+}
+
 .element-stayin {
 	animation: element-fadein 0.3s;
 	pointer-events: auto !important;

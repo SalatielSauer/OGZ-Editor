@@ -45,11 +45,11 @@ worker.onmessage = function(event) {
 
 	switch(message.type) {
 		case -1:
-			if (message.body.toString().includes("RangeError")) {
+			if (message.body.toString().includes('RangeError')) {
 				FS_fileStatus.update(1, `Trying to adjust mapsize to contain out-of-bounds cubes..`, 'fas fa-spinner fa-spin');
 				worker.postMessage({'type': 1});
 			} else {
-				console.error("Could not parse JSON correctly.", message.body);
+				console.error('Could not parse JSON correctly.', message.body);
 				FS_fileStatus.update(0, `Something went wrong.`, 'fas fa-times');
 				alert(message.body);
 				window['checkbox-useimportedjson'].disabled = false;
@@ -197,7 +197,7 @@ addButton('#button-importjson', (event) => {
 			if (FS.fileHandle) {
 				saveFile();
 				return;
-			};
+			}
 
 			FS_fileStatus.update(1, `${file.name} is imported.`, 'fas fa-file', [
 				{'text': '<i class="fas fa-save"></i> Save OGZ', 'onclick': () => {
@@ -207,6 +207,59 @@ addButton('#button-importjson', (event) => {
 		};
 	});
 });
+
+const handleDragOver = (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    window['button-importjson'].classList.add('drag-over');
+    FS_fileStatus.update(0, 'Drop file to start processing.', 'fas fa-upload');
+};
+
+const handleDragLeave = () => {
+    window['button-importjson'].classList.remove('drag-over');
+};
+
+const handleDrop = async (event) => {
+	event.stopPropagation();
+	event.preventDefault();
+	window['button-importjson'].classList.remove('drag-over');
+	const files = event.dataTransfer.files;
+
+	if (files.length > 0) {
+		const file = files[0];
+		if (file.type === 'application/json"' || file.name.endsWith('.json')) {
+			const reader = new FileReader();
+			FS_fileStatus.update(1, `Reading ${file.name}...`, 'fas fa-spinner fa-spin');
+			reader.onload = (e) => {
+				const content = e.target.result;
+				window['checkbox-useimportedjson'].disabled = true;
+				jsonToOGZ(content);
+				worker.callback = () => {
+					window['checkbox-useimportedjson'].disabled = false;
+					if (FS.fileHandle) {
+						saveFile();
+						return;
+					}
+
+					FS_fileStatus.update(1, `${file.name} is imported.`, 'fas fa-file', [
+						{'text': '<i class="fas fa-save"></i> Save OGZ', 'onclick': () => {
+							saveFile();
+						}}
+					]);
+				};
+			};
+
+			reader.readAsText(file);
+		} else {
+			FS_fileStatus.update(0, `Currently only JSON files are supported.`, 'fas fa-times');
+		}
+	}
+}
+
+document.body.addEventListener('dragover', handleDragOver);
+document.body.addEventListener('dragleave', handleDragLeave);
+document.body.addEventListener('drop', handleDrop);
 
 const pageKeylog = [];
 document.body.addEventListener('keydown', (event) => {
