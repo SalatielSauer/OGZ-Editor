@@ -1,6 +1,6 @@
 {
 	"short_name": "OGZ Editor",
-	"name": "OGZ Raw Editor - Create Sauerbraten maps using JSON",
+	"name": "OGZ Editor - Create Sauerbraten maps using JavaScript",
 	"icons": [{
 		"src": "images/icon-192.png",
 		"type": "image/png",
@@ -10,17 +10,13 @@
 		{
 			"src": "images/screenshot-1.png",
 			"type": "image/png",
-			"sizes": "1024x768"
+			"sizes": "2024x1024",
+			"form_factor": "wide"
 		},
 		{
 			"src": "images/screenshot-2.png",
 			"type": "image/png",
-			"sizes": "1024x768"
-		},
-		{
-			"src": "images/screenshot-3.png",
-			"type": "image/png",
-			"sizes": "1024x768"
+			"sizes": "2024x1024"
 		}
 	],
 	"start_url": "/OGZ-Editor/",

@@ -1,129 +1,127 @@
-@keyframes highlight-feedback-message-popup {
-	0% {
-		border-radius: 0px;
-		border-bottom-left-radius: 10px;
-		transform: translate(0px, 0px);
-		filter: opacity(0);
-	}
-	50% {
-		border-radius: 10px;
-		transform: translate(0px, -33px);
-		filter: opacity(1);
-	}
-	100% {
-		border-bottom-left-radius: 0px;
-		transform: translate(0px, -28px);
-	}
+html, body, #texteditor {
+	height: 97%;
 }
 
-#editor {
-	background: transparent;
-	border-style: solid;
-	border-color: #101010;
-	border-radius: 0px;
-	border-width: 2px;
-	caret-color: white;
-	color: transparent;
-	margin-left: -2px;
-	margin-top: -2px;
-	outline: none;
-	transition: border-color 0.2s;
-	white-space: pre;
-	z-index: 1;
-}
-
-#editor:focus {
+#texteditor {
+	font-size: large;
+	text-shadow: 0px 1px 3px black;
 	border-color: #444242;
+	transition: border-color 0.2s;
+	outline: none;
+	border-style: dashed;
+	margin-top: 10px;
+	background-color: #1d1a1d;
 }
 
-#editor::selection {
+#texteditor:focus {
+	border-color: #008ab4;
+}
+
+#texteditor::selection {
 	background-color: #ed143db5;
 	color: white;
 }
 
-#highlight,
-#editor {
-	overflow: auto;
-}
 
-#highlight-content {
-	color: #bfbfbf;
-	filter: hue-rotate(310deg) saturate(3);
-	pointer-events: none;
-	text-shadow: 0px 1px 3px black;
-}
-
-#highlight-content,
-#editor {
-	display: block;
-	height: var(--editor-height);
-	max-height: var(--editor-height);
-	max-width: var(--editor-width);
-	min-width: var(--editor-width);
-	padding: 15px;
-	position: absolute;
-	resize: none;
-	top: 50px;
-	width: var(--editor-width);
-}
-
-.highlight-feedback-bad {
-	background-color: #503f19bf;
-	color: white;
-}
-
-.highlight-feedback-good {
-	background-color: #2e968859;
-	/* color: white; */
-}
-
-.highlight-feedback-token {
-	background-color: black;
-	color: white;
-}
-
-.highlight-feedback-message {
-	animation: highlight-feedback-message-popup 0.5s;
-	background-color: #000000d9;
-	border-color: orange;
-	border-radius: 10px;
-	border-style: dashed;
-	border-bottom-left-radius: 0px;
-	border-width: 1px;
-	box-shadow: 0 0 3px 0px black;
-	font-size: small;
+.tooltip {
+	background-color: rgba(0, 0, 0, 0.7);
+	color: #00f3ea;
+	border-radius: 4px;
 	padding: 5px;
+	font-size: 15px;
+	pointer-events: none;
+	position: absolute;
+	z-index: 1000;
+	display: none;
+	/* max-width: 300px; */
+	word-wrap: break-word;
+	font-family: sauerfont;
+}
+
+.tooltip span {
+	color: #9b9b9b;
+}
+
+.tooltip .comment {
+	color: #9b9b9b;
+	font-style: italic;
+}
+
+.param {
+	border-radius: 2px;
+}
+
+.param.active {
+	color: #31ffbe;
+	background-color: rgba(255, 255, 255, 0.2);
+	border-radius: 2px;
+	padding: 2px 4px;
+}
+
+.param.hasDetails {
+	text-decoration: underline;
+	cursor: help;
 	pointer-events: all;
-	position: absolute;
-	transform: translate(0px, -28px);
-	transition: filter 0.3s;
 }
 
-.highlight-feedback-message #icon-close-message {
-	background-color: black;
-	border-color: black;
-	border-radius: 15px;
-	border-style: solid;
-	border-width: 1px;
-	color: white;
-	position: absolute;
-	transform: translate(-5px, -15px);
-	transition: color 0.5s;
+.param.active:not(.hasDetails)::after {
+	color: grey;
+	content: ' 🛈';
 }
 
-.highlight-feedback-message #icon-close-message:hover {
-	color: orange;
+.tooltip .param.hasDetails::after {
+	content: ' 🛈';
+}
+
+.autocomplete-container {
+	background-color: rgba(0, 0, 0, 0.7);
+	color: #00f3ea;
+	border-radius: 4px;
+	position: absolute;
+	z-index: 9999;
+	font-family: monospace;
+	font-size: 14px;
+	max-height: 200px;
+	overflow-y: auto;
+	border-radius: 0px 12px 12px;
+	border-top-left-radius: 0px;
+}
+
+.autocomplete-container .item.selected {
+	background-color: #555;
+	color: rgb(255, 255, 255);
+}
+
+.autocomplete-container .function-item  {
+	color: #007acc;
+}
+
+.autocomplete-container .object-item {
+	color: #a45ee5;
+}
+
+.autocomplete-container .item {
+	padding: 4px 8px;
 	cursor: pointer;
 }
 
-.highlight-block-bracket {
-    background-color: #000000;
-    border-radius: 3px;
-    border-width: 1px;
-    color: chartreuse;
+.autocomplete-container .item:hover {
+	background: #40b9ff;
 }
 
-.highlight-block-content {
-    background-color: #00000045;
-    color: grey;
+
+.ace-one-dark .ace_fold {
+	background-color: #00f3ea;
+}
+
+.ace_gutter-cell.ace_error, .ace_icon.ace_error, .ace_icon.ace_error_fold, .ace_gutter-cell.ace_security, .ace_icon.ace_security, .ace_icon.ace_security_fold {
+	background-image: url('../images/exit.jpg');
+}
+
+.ace_dark .ace_gutter-cell.ace_info, .ace_dark .ace_icon.ace_info, .ace_dark .ace_gutter-cell.ace_hint, .ace_dark .ace_icon.ace_hint {
+	background-image: url('../images/info.jpg');
+}
+
+.ace_gutter-cell.ace_warning, .ace_icon.ace_warning, .ace_icon.ace_warning_fold {
+	background-image: url('../images/warn.png');
 }

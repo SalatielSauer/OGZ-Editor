@@ -1,63 +1,74 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<meta charset="UTF-8">
-		<meta property="og:title" content="OGZ Editor">
-		<meta property="og:description" content="A tool for writing Cube 2 Sauerbraten maps using JSON.">
-		<meta property="og:image" content="https://raw.githubusercontent.com/SalatielSauer/OGZ-Editor/master/images/screenshot-3.png">
-		<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 		<title>OGZ Editor</title>
 		<link rel="stylesheet" type="text/css" href="styles/styles.css"/>
 		<link rel="stylesheet" type="text/css" href="styles/texteditor.css"/>
-		<link rel="stylesheet"href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/stackoverflow-dark.min.css">
 		<link rel="manifest" href="manifest.json">
-		<script src="pwapp.js"></script>
-		<script src="https://kit.fontawesome.com/03a1634190.js" crossorigin="anonymous"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-		<script src="scripts/jsocta.js"></script>
-		<script src="scripts/mini-jsocta.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.37.1/ace.js" integrity="sha512-qLBIClcHlfxpnqKe1lEJQGuilUZMD+Emm/OVMPgAmU2+o3+R5W7Tq2Ov28AZqWqZL8Jjf0pJHQZbxK9B9xMusA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+		<script src="scripts/ogzeditor_presets.js"></script>
 		<script src="scripts/texteditor.js" defer></script>
 		<script src="scripts/main.js" defer></script>
 	</head>
+
 	<body>
 		<div class="pagetop">
 			<div class="menu">
 				<div class="submenu">
-					<h2 class="submenu-button"><i class="fas fa-plus"></i></h2>
+					<h2 class="submenu-button">➕</h2>
 					<div class="submenu-content">
 						<h2 id="filesystem-file">No file selected</h2>
-						<button id="button-save" title="CTRL+S"><i class="fas fa-save"></i> Save OGZ</button><br>
-						<!--<p>CTRL+S</p>-->
-						<button id="button-saveas"><i class="fas fa-folder"></i> Save As...</button><br>
-						<!--<p>CTRL+SHIFT+S</p>-->
-						<button id="button-download"><a id="button-download-a"><i class="fas fa-download"></i> Download</a></button>
+						<button id="button_saveas">📁 Save As...</button><br>
+						<button id="button_download"><a id="button-download-a">📥 Download</a></button>
 					</div>
 				</div>
-				<button id="button-validatejson"><i class="fas fa-search"></i> Validate JSON</button>
-				<button id="button-formatjson"><i class="fas fa-file"></i> Format JSON</button>
-				<button id="button-importjson"><i class="fas fa-exchange-alt"></i> Import & Convert JSON</button>
+				<button id="button_save">💾 Save .OGZ</button>
+				<div class="file-input-wrapper">
+					<button class="file-input-button" id="main-file-upload-button" onclick="window['input_file'].click();">📁 Upload Image/GIF</button>
+					<button id="main-asset-clear-button"></button>
+					<input type="file" id="input_file" accept="image/*" multiple>
+				</div>
 			</div>
-			<div class="pageabout">
-				<h2>
-					OGZ Raw Editor
-					<!--<span>by <a href="https://salatielsauer.github.io/">@SalatielSauer</a></span>-->
-					<br>
-					<span><a target="_blank" href="https://github.com/SalatielSauer/OGZ-Editor/blob/master/README.md"><i class="fab fa-readme"></i> help</a> - <a href="https://github.com/SalatielSauer/OGZ-Editor#jsocta"><i class="fab fa-github"></i> jsocta</a> - <a href="http://sauerbraten.org/"> sauerbraten.org</a></span>
-				</h2> 
-			</div>
-			<h2 id="filesystem-status"></h2>
 		</div>
-		<div id="editor-container">
-			<textarea id="editor" spellcheck="false"></textarea>
-			<pre id="highlight" aria-hidden="true">
-				<code class="language-json" id="highlight-content"></code>
-			</pre>
+		<div class="pageabout">
+			<h2>
+				<img src="favicon.ico" alt="OGZ-Editor" style="width: 22px; vertical-align: middle;">
+				OGZ Editor
+				<br>
+				<span><a target="_blank" href="https://github.com/SalatielSauer/OGZ-Editor/blob/master/README.md">💬help</a> - <a href="https://github.com/SalatielSauer/OGZ-Editor#jsocta"> jsocta</a> - <a href="http://cubeengine.com/"> cubeengine.com</a></span>
+			</h2> 
 		</div>
+		<h2 id="filesystem-status"></h2>
+		<div class="presets-dropdown">
+			<button id="button_preset_refresh" style="display: none; border-color: lightseagreen;" onclick="refreshCustomPreset()" title="Update Custom Preset">✔️</button>
+			<button id="button_preset" style="display: none; border-color: #b0b0b0;" onclick="saveCustomPreset()" title="Add Custom Preset">➕</button>
+			<select id="presets-dropdown-item-selector"></select>
+			<button id="button_preset_download" style="border-style: none;" onclick="downloadPreset()" title="Download Preset">💾</button>
+		</div>
+		<div id="texteditor"></div>
 		<script>
 			if ("serviceWorker" in navigator) {
-				navigator.serviceWorker.register("/OGZ-Editor/pwapp.js", {scope: "/OGZ-Editor/"})
-			}
+				const basePath = location.href.replace(/\/[^\/]+$/, "");
+				navigator.serviceWorker.register(`${basePath}pwapp.js`, { scope: basePath })
+				.then(reg => {
+					reg.addEventListener("updatefound", () => {
+						const newWorker = reg.installing;
+						newWorker.addEventListener("statechange", () => {
+							if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+								console.log("New OGZ-Editor version is available; please refresh.");
+								FS_fileStatus.update(1, `Checking new version...`, "fas fa-spinner fa-spin");
+							}
+						});
+					});
+				});
+				navigator.serviceWorker.addEventListener("message", (event) => {
+					if (event.data.type === 1) {
+						FS_fileStatus.update(1, `Updating OGZ Editor to ${event.data.body}...`, "fas fa-spinner fa-spin");
+						window.location.reload();
+					}
+				});
+			};
 		</script>
 	</body>
 </html>
