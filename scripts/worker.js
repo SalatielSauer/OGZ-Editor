@@ -271,7 +271,7 @@ class JSOCTA_helper {
 		if (fresh) {
 			this.JSOCTA = new OctaMap(this.OBJECTS);
 		};
-		this.byteArray = this.JSOCTA.getByteArray();
+		this.byteArray = this.JSOCTA.get_byte_array();
 	}
 
 	compress() {

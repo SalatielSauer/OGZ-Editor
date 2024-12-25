@@ -48,22 +48,22 @@
 		</div>
 		<div id="texteditor"></div>
 		<script>
-			if ("serviceWorker" in navigator) {
-				const basePath = location.href.replace(/\/[^\/]+$/, "");
+			if ('serviceWorker' in navigator) {
+				const basePath = location.href.replace(/\/[^\/]+$/, '');
 				navigator.serviceWorker.register(`${basePath}pwapp.js`, { scope: basePath })
 				.then(reg => {
-					reg.addEventListener("updatefound", () => {
+					reg.addEventListener('updatefound', () => {
 						const newWorker = reg.installing;
-						newWorker.addEventListener("statechange", () => {
-							if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-								console.log("New OGZ-Editor version is available; please refresh.");
+						newWorker.addEventListener('statechange', () => {
+							if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+								console.log('New OGZ-Editor version is available; please refresh.');
 								FS_fileStatus.update(1, `Checking new version...`, '⚙️');
 							}
 						});
 					});
 				});
-				navigator.serviceWorker.addEventListener("message", (event) => {
-					if (event.data.type === "CACHE_UPDATED") {
+				navigator.serviceWorker.addEventListener('message', (event) => {
+					if (event.data.type === 'CACHE_UPDATED') {
 						FS_fileStatus.update(1, `Updating OGZ Editor to ${event.data.body}...`, '⚙️');
 						window.location.reload();
 					}
