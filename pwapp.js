@@ -1,4 +1,4 @@
-const version = '0.21';
+const version = '0.22';
 const cacheName = `ogzeditor-${version}`;
 const assetsToCache = [
 	'/OGZ-Editor/index.html',
@@ -58,6 +58,7 @@ self.addEventListener('activate', (event) => {
 				return self.clients.matchAll().then((clients) => {
 					clients.forEach((client) => {
 						client.postMessage({ type: 'CACHE_UPDATED', version });
+						client.postMessage({ type: 1, version }); // trigger update of caches with old format
 					});
 				});
 			})
