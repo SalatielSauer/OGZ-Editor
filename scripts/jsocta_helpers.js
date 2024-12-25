@@ -13,16 +13,14 @@ function _addCube(x, y, z, af, g = 2, vcolor = null) {
 function _addSphere(centerX=512, centerY=512, centerZ=512, g=1, t=1, radius=32, segments=64, rings=64) {
 	const result = [];
 	for (let i = 0; i <= rings; i++) {
-		const phi = (i / rings) * Math.PI; // Vertical angle (phi)
+		const phi = (i / rings) * Math.PI;
 		for (let j = 0; j <= segments; j++) {
-			const theta = (j / segments) * Math.PI * 2; // Horizontal angle (theta)
-			
-			// Calculate the x, y, z coordinates on the sphere
+			const theta = (j / segments) * Math.PI * 2;
+
 			const x = centerX + radius * Math.sin(phi) * Math.cos(theta);
 			const y = centerY + radius * Math.sin(phi) * Math.sin(theta);
 			const z = centerZ + radius * Math.cos(phi);
 
-			// Add the cube (you can implement _addCube as needed)
 			result.push(_addCube(
 				Math.round(x),
 				Math.round(y),
@@ -34,7 +32,103 @@ function _addSphere(centerX=512, centerY=512, centerZ=512, g=1, t=1, radius=32, 
 	return result;
 }
 
-function _loopMap(max, gridpower, callback) {
+function _addTorus(centerX=512, centerY=512, centerZ=512, g=1, t=1, majorRadius=64, minorRadius=16, segments=64, rings=64) {
+	const result = [];
+	for (let i = 0; i <= rings; i++) {
+		const phi = (i / rings) * Math.PI * 2;
+		for (let j = 0; j <= segments; j++) {
+			const theta = (j / segments) * Math.PI * 2;
+
+			const x = centerX + (majorRadius + minorRadius * Math.cos(theta)) * Math.cos(phi);
+			const y = centerY + (majorRadius + minorRadius * Math.cos(theta)) * Math.sin(phi);
+			const z = centerZ + minorRadius * Math.sin(theta);
+
+			result.push(_addCube(
+				Math.round(x),
+				Math.round(y),
+				Math.round(z),
+				t, g
+			));
+		}
+	}
+	return result;
+}
+
+function _addHelix(centerX=512, centerY=512, centerZ=512, g=1, t=1, radius=32, height=128, turns=3, segments=128) {
+	const result = [];
+	for (let i = 0; i <= segments; i++) {
+		const angle = (i / segments) * Math.PI * 2 * turns;
+		const heightStep = (i / segments) * height;
+
+		const x = centerX + radius * Math.cos(angle);
+		const y = centerY + radius * Math.sin(angle);
+		const z = centerZ + heightStep;
+
+		result.push(_addCube(
+			Math.round(x),
+			Math.round(y),
+			Math.round(z),
+			t, g
+		));
+	}
+	return result;
+}
+
+function _addKleinBottle(centerX=512, centerY=512, centerZ=512, g=1, t=1, scale=16, segments=64, rings=64) {
+	const result = [];
+	for (let i = 0; i <= rings; i++) {
+		const v = (i / rings) * Math.PI * 2;
+		for (let j = 0; j <= segments; j++) {
+			const u = (j / segments) * Math.PI * 2;
+			
+			let x, y, z;
+			if (u < Math.PI) {
+				x = centerX + scale * (3 * Math.cos(u) * (1 + Math.sin(u)) + 
+					(2 * (1 - Math.cos(u) / 2)) * Math.cos(u) * Math.cos(v));
+				y = centerY + scale * (4 * Math.sin(u) + 
+					(2 * (1 - Math.cos(u) / 2)) * Math.sin(u) * Math.cos(v));
+				z = centerZ + scale * ((2 * (1 - Math.cos(u) / 2)) * Math.sin(v));
+			} else {
+				x = centerX + scale * (3 * Math.cos(u) * (1 + Math.sin(u)) + 
+					(2 * (1 - Math.cos(u) / 2)) * Math.cos(v + Math.PI));
+				y = centerY + scale * (4 * Math.sin(u));
+				z = centerZ + scale * ((2 * (1 - Math.cos(u) / 2)) * Math.sin(v));
+			}
+
+			result.push(_addCube(
+				Math.round(x),
+				Math.round(y),
+				Math.round(z),
+				t, g
+			));
+		}
+	}
+	return result;
+}
+
+function _addMobiusStrip(centerX=512, centerY=512, centerZ=512, g=1, t=1, radius=64, width=16, segments=128, rings=16) {
+	const result = [];
+	for (let i = 0; i <= rings; i++) {
+		const v = (i / rings - 0.5) * width;
+		for (let j = 0; j <= segments; j++) {
+			const u = (j / segments) * Math.PI * 2;
+			
+			const x = centerX + (radius + v * Math.cos(u/2)) * Math.cos(u);
+			const y = centerY + (radius + v * Math.cos(u/2)) * Math.sin(u);
+			const z = centerZ + v * Math.sin(u/2);
+
+			result.push(_addCube(
+				Math.round(x),
+				Math.round(y),
+				Math.round(z),
+				t, g
+			));
+		}
+	}
+	return result;
+}
+
+function _loopMap(max = 512, gridpower = 5, callback = ()=>{}) {
 	let integer = 0;
 	let power = (1 << gridpower);
 	for (let x = 0; x <= max; x+=power) {
