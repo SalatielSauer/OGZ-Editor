@@ -163,7 +163,7 @@ const assetHandler = new AssetHandler();
 
 self.onmessage = async (event) => {
 	const data = event.data;
-	let jsocta_skip_init = false;
+	let jsocta_skip_init = {state: false};
 
 	switch(data.type) {
 		case 'clear_assets':
@@ -190,21 +190,21 @@ self.onmessage = async (event) => {
 			} else {
 				JSOCTAHELPER.JSOCTA.mapsize *= 2;
 			}
-			jsocta_skip_init = true;
+			jsocta_skip_init = {state: true, reason: `Map size adjusted to ${Math.log2(JSOCTAHELPER.JSOCTA.mapsize)}.`};
 
 		case 'jsocta_start_process':
 			try {
-				if (!jsocta_skip_init) {
+				if (!jsocta_skip_init.state) {
 					postMessage({type: 'info', content: 'Extracting object data..', prefix: '🔎'});
 					JSOCTAHELPER.execute(data.content); // run user's javascript
 				}
 				
-				postMessage({type: 'info', content: 'Writing OGZ data..'});
-				JSOCTAHELPER.encode(!jsocta_skip_init); // converts js objects to hex string
+				postMessage({type: 'info', content: `${jsocta_skip_init.state ? `⚠️ ${jsocta_skip_init.reason}\n` : ''}Writing OGZ data..`});
+				JSOCTAHELPER.encode(!jsocta_skip_init.state); // converts js objects to hex string
 
 				postMessage({type: 'info', content: 'Compressing OGZ data..', prefix: '⏳'});
 				JSOCTAHELPER.compress(); // finally gzip everything
-				//console.log('done', JSOCTAHELPER)
+
 				postMessage({type: 'done_ogz', content: {OBJECTS: JSOCTAHELPER.OBJECTS, JSOCTA: JSOCTAHELPER.JSOCTA, GZIP: JSOCTAHELPER.GZIP}});
 			} catch (error) {
 				console.warn(error);

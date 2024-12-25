@@ -117,8 +117,9 @@ button:focus-visible,
 }
 
 #filesystem-status {
-	font-family: sauerfont;
+	--shadow: drop-shadow(2px 4px 6px black);
 	color: #3dd3c4;
+	font-family: sauerfont;
 	font-size: large;
 	margin: 0px;
 	padding-top: 16px;
@@ -146,7 +147,7 @@ button:focus-visible,
 .element-stayin {
 	animation: element-fadein 0.3s;
 	pointer-events: auto !important;
-	filter: opacity(1);
+	filter: opacity(1) var(--shadow);
 }
 
 .element-fadein .icon {
@@ -156,12 +157,12 @@ button:focus-visible,
 
 .element-fadein {
 	animation: element-fadein 0.3s, processing 1s infinite linear;
-	filter: opacity(1);
+	filter: opacity(1) var(--shadow);
 }
 
 .element-fadeout {
 	animation: element-fadeout 3s;
-	filter: opacity(0);
+	filter: opacity(0) var(--shadow);
 }
 
 .presets-dropdown {

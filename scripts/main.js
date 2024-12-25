@@ -6,13 +6,13 @@ class StatusFeedback {
 		this.element = document.querySelector(selector);
 	}
 
-	update(state, text, icon, buttons = []) {
+	update(state = 0, text = '', icon = '', buttons = []) {
 		// reset animations
 		const clone = this.element.cloneNode(true);
 		this.element.parentNode.replaceChild(clone, this.element);
 		this.element = clone;
 
-		this.element.innerHTML = `<span class='icon'>${icon}</span>${text}${buttons.length ? '<br>' : ''}`;
+		this.element.innerHTML = `<span class='icon'>${icon}</span> ${text.replace('\n', '<br>')}${buttons.length ? '<br>' : ''}`;
 		buttons.forEach(button => {
 			const buttonElement = document.createElement(button.element || 'button');
 			if (button.id) {
@@ -53,7 +53,14 @@ function handleAssetDone(data) {
 
 function FS_updateFeedback(selectedFile) {
 	if (!FS.fileHandle || !selectedFile) {
-		FS_fileStatus.update(0, 'Could not save file.', '❌');
+		if (FS.hasAccess) {
+			FS_fileStatus.update(0, 'Could not save file.', '❌');
+		} else {
+			FS_fileStatus.update(1, 'OGZ Editor could not access the file picker.<br>Try downloading instead.<br>', '⚠️', [
+				{text: '📥 Download .OGZ', onclick: () => { window['button_download'].click(); }},
+				{text: '✖', onclick: () => { FS_fileStatus.update() }}
+			]);
+		}
 		return;
 	}
 	FS_fileStatus.update(0, 'File saved successfully.', '✔️');
