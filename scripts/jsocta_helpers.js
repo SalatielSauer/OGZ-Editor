@@ -231,6 +231,9 @@ function _addImage(index = 0, quality = 50, oX = 0, oY = 0, oZ = 0, gridpower = 
 	
 	assetHandler.setQuality(quality);
 	let asset = assetHandler.asset;
+
+	if (asset.frames.length === 0) throw new Error('⚠️ This script requires at least one asset, make sure to upload it and try again.');
+
 	let frames = (typeof index == 'object') ? asset.frames.slice(...Object.values(index)) : [asset.frames[index]];
 
 	let cubeSize = 1 << gridpower;

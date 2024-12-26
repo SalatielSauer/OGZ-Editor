@@ -1,5 +1,5 @@
 
-# OGZ-Editor
+# OGZ Editor
 A browser tool for writing [Sauerbraten](http://sauerbraten.org/) .ogz files (maps) using JavaScript.<br>
 https://salatielsauer.github.io/OGZ-Editor/
 
@@ -9,23 +9,25 @@ https://salatielsauer.github.io/OGZ-Editor/
 	- [Map Variables](#map-variables)
 	- [Entities](#entities)
 	- [Geometry](#geometry)
+	- [VSlots](#vslot-commands)
 
 - [JSOCTA](#jsocta)
-	- [Classes](#classes)
-	- [Common Methods](#common-methods)
+	- [OctaMap](#octamap-class-methods)
   - [Browser Example](#browser-pakogzip)
 
 ## Updates (22/12/2024)
 
-- OGZ-Editor now supports running JavaScript directly.
+- OGZ Editor now supports running JavaScript directly.
 - VSlot commands are now supported ([VSlots >](#vslot-commands)).
 - Negative entity attribute values ​​work properly.
 - A bunch of handy functions have been added ([`ogzeditor.` Helpers >](#ogz-editor-helpers)).
 - Available functions are displayed for auto-completion when typing them with the `ogzeditor.` prefix.
 - Presets can be saved to the browser cache or downloaded locally.
-- A bunch of script presets are available ([Script Presets >](#script-presets)).
+- A bunch of script presets are available ([Script Presets >](https://github.com/SalatielSauer/OGZ-Editor/tree/master/scripts/examples)).
 - The previous home-made editor has been replaced by a more efficient one.
-- OGZ-Editor now allows you to upload assets (images/gifs) and use their data as input for JSOCTA.
+- OGZ Editor now allows you to upload assets (images/gifs) and use their data as input for JSOCTA.
+
+![](https://github.com/SalatielSauer/misc/blob/master/ogzeditor_demo_2.gif?raw=true)
 
 <hr>
 
@@ -115,6 +117,8 @@ The list of available vslots are:
 - valpha
 - vcolor
 
+For vslots to take effect the geometry must have at least one texture.
+
 ## OGZ Editor Helpers
 To make it easier to generate some structures, there are some predefined functions that can be accessed by typing `ogzeditor.`:
 
@@ -160,37 +164,27 @@ To make it easier to generate some structures, there are some predefined functio
 <hr>
 
 # JSOCTA
-JSOCTA is what powers OGZ Editor, it consists of functions that read, format and convert the contents of a JavaScript object to a valid OGZ.
+JSOCTA is what powers the OGZ Editor, it consists of classes with methods that read, format and convert the contents of a JavaScript object into a valid OGZ.
 
-You can easily install [**jsocta.js**](https://raw.githubusercontent.com/SalatielSauer/OGZ-Editor/master/scripts/jsocta.js) on your own page with the script tag:<br>
+You can easily install [**mini-jsocta.js**](https://raw.githubusercontent.com/SalatielSauer/OGZ-Editor/master/scripts/mini-jsocta.js) on your own page with the script tag:<br>
 ```html
 <script src="mini-jsocta.js"></script>
 ```
 
-### Classes
-JSOCTA has the following classes:
-- `new OctaMap(object)`
-The main class, it formats the converted result of all other classes respecting the OCTA structure.
-
-- `new OctaMapvars(object)`
-Handles the formatting and conversion of the map variables object.
-
-- `new OctaEntities(array)`
+### OctaMap class methods
+- `.get_string()`
+Converts and returns all items as a concatenated string.
+- `.get_byte_array()`
+Converts, concatenates and returns all items as a byte array.
+- `.format_mapvars()`
+Handles the formatting and conversion of map variables object.
+- `.format_entities()`
 Handles the formatting and conversion of the map entities array.
-
-- `new OctaGeometry(array)`
+- `.format_geometry()`
 Handles the formatting and conversion of the map octree array.
+- `.format_vslots()`
+Handles the formatting and conversion of the textures array (requires .format_geometry() to be ready).
 
-### Common Methods
-All the above classes have the following methods:
-- `.format(object)`
- Converts a single item and returns it as a string array.
-- `.getStringArray()`
- Converts and returns all (string) items as an array.
-- `.getString()`
- Converts and returns all items as a concatenated string.
-- `.getByteArray()`
- Converts, concatenates and returns all items as a byte array.
 
 #### Browser [pako.gzip](https://github.com/nodeca/pako)
 ```html
@@ -205,7 +199,7 @@ All the above classes have the following methods:
 				new OctaMap({
 					"mapvars": {"maptitle": "map generated with the browser"},
 					"geometry": [{'x': 512, 'y': 512, 'z': 512, 'af': 1462}]
-				}).getByteArray()
+				}).get_byte_array()
 			)
 		)
 	</script>
@@ -226,11 +220,11 @@ All the above classes have the following methods:
 	- [x] Support multiple entities of the same type
 	- [x] Support negative values of entity attributes
 	###### Octree
-	- [x] Support cube insertion at a specific coordinate and size (the `OctaGeometry.insert()` method)
+	- [x] Support cube insertion at a specific coordinate and size
 	- [ ] Support for copying and pasting geometry chunks
 	- [x] Complex shapes (edges/corners editing)
 	- [ ] Materials (alpha, clip, death, gameclip, lava, noclip, water)
-	- [x] Virtual Slots
+	- [x] Virtual Slots (vshaderparam, vcolor, vscroll, vscale, valpha, voffset, vrotate)
 	- [ ] Lightmaps
 	- [ ] Blendmaps
 
@@ -240,6 +234,8 @@ All the above classes have the following methods:
 - [x] Presets environment to allow saving and loading script easily
 
 <hr>
+
+If you are interested in knowing [How VSlots are indexed in the OGZ file](https://docs.google.com/document/u/1/d/e/2PACX-1vSIOyX-SMcNvJpXFJdBup7jaJQ5YxVhUY5T5MRVQSu_ngAmnHtb23h6Y6Fxta9JNJJUQSbrKkGraDZT/pub) <-
 
 OGZ Editor & JSOCTA by Salatiel S.<br>
 Special thanks to [James Stanley](https://incoherency.co.uk/blog/) (@jes) for his very helpful [**documentation**](http://web.archive.org/web/20201112035903/https://incoherency.co.uk/interest/sauer_map.html) regarding version 29 of the Sauerbraten map format.

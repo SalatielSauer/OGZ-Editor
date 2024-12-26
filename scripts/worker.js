@@ -79,7 +79,6 @@ class AssetHandler {
 		}
 	}
 	
-
 	async processImages(dataUrls) {
 		try {
 			const loadImage = async (dataUrl) => {
@@ -252,6 +251,13 @@ class JSOCTA_helper {
 	}
 
 	execute(text) {
+		if (text.includes('.asset') && assetHandler.asset.frames.length === 0) {
+			postMessage({
+				type: 'failed',
+				content: '⚠️ This script requires at least one asset, make sure to upload it and try again.'
+			});
+			return;
+		}
 		//console.log('executing user script')
 		const helpers = {
 			...jsocta_helpers,
