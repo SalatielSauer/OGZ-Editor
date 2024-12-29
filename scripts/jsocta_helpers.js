@@ -421,8 +421,10 @@ function _addImage(
 			const localZ = oZ + offsetZ + (height - 1 - yIndex) * cubeSize;
 
 			let callbackResult = callback(
-				{ r, g, b, a, brightness, heightValue, width, height },
-				{ x: localX, y: localY, z: localZ, frameIndex}
+				{
+					r, g, b, a, brightness, heightValue, width, height,
+					x: localX, y: localY, z: localZ, frameIndex
+				}
 			);
 			
 			// "false" -> skip, "true" -> keep existing RGBA

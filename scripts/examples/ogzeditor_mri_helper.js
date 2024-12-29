@@ -12,6 +12,6 @@ mapvars({
 
 entities([]);
 
-geometry(() => ogzeditor.image([0, ogzeditor.asset.frames.length], 35, 512, 512, 0, 0, 0, 90, 0, 1, 2, true, 3, (colors, position) => {
-    return (colors.heightValue >= 5);
+geometry(() => ogzeditor.image([0, ogzeditor.asset.frames.length], 35, 512, 512, 0, 0, 0, 90, 0, 1, 2, true, 3, (pixel) => {
+    return (pixel.heightValue >= 5);
 }));
