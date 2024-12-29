@@ -6,10 +6,28 @@ const ogzeditor_presets = [
 		"file": "scripts/examples/ogzeditor_default.js"
 	},
 	{
-		"name": "MRI Gif Extractor",
+		"name": "Text 3D Rotation",
+		"author": "SalatielSauer",
+		"url": "https://github.com/SalatielSauer/",
+		"file": "scripts/examples/ogzeditor_textrotation.js"
+	},
+	{
+		"name": "Subtractive Geometry",
+		"author": "SalatielSauer",
+		"url": "https://github.com/SalatielSauer/",
+		"file": "scripts/examples/ogzeditor_subtractive_geometry.js"
+	},
+	{
+		"name": "MRI GIF Extractor (no-helper)",
 		"author": "SalatielSauer",
 		"url": "https://github.com/SalatielSauer/",
 		"file": "scripts/examples/ogzeditor_mri.js"
+	},
+	{
+		"name": "MRI GIF Extractor (helper)",
+		"author": "SalatielSauer",
+		"url": "https://github.com/SalatielSauer/",
+		"file": "scripts/examples/ogzeditor_mri_helper.js"
 	},
 	{
 		"name": "Simple 2D Image (no-helper)",
@@ -73,22 +91,27 @@ const helpers_descriptions = {
 		params: ['centerX', 'centerY', 'centerZ', 'gridpower', 'texture', 'radius', 'segments', 'rings']
 	},
 	'ogzeditor.text': {
-		comment: 'Adds a text to the map.',
-		params: ['text', 'startX', 'startY', 'startZ', 'texture', 'gridpower', 'rotate']
+		comment: 'Adds a text to the map, supports color markers (<strong>^fN</strong>) and 3D rotation (yaw, pitch, roll).',
+		params: ['text', 'startX', 'startY', 'startZ', 'texture', 'gridpower', 'yaw', 'pitch', 'roll'],
+		details: {
+			0: `Predefined colors can be chosen with the ^fN marker, where N is a number from 0 to 8.\nExample: '^f2hello ^f8world'`
+		}
 	},
 	'ogzeditor.loopmap': {
-		comment: 'Loops over every position with a given gridpower, returns x y z values as callback',
+		comment: 'Loops over every position with a given gridpower, returns x y z i values as callback.<br>⚠️This will crash easily if you set the gridpower too low.',
 		params: ['worldSize', 'gridpower', 'callback']
 	},
 	'ogzeditor.image': {
-		comment: 'Adds one or more flat images with optional heightmap support, also allows changing orientation.<br>Use the Upload button to add assets.',
-		params: ['assetID', 'quality', 'startX', 'startY', 'startZ', 'gridpower', 'yaw', 'layout', 'direction', 'heightmap'],
+		comment: 'Adds one or more flat images with optional heightmap support, also allows changing 3D orientation.<br>Use the Upload button to add assets.',
+		params: ['assetID', 'quality', 'startX', 'startY', 'startZ', 'gridpower', 'yaw', 'pitch', 'roll', 'heightmap', 'direction', 'localPivot', 'layerOffset', 'callback'],
 		details: {
 			0: 'Either an integer or an array containing the [start, end] of a range (for multiple frames)',
-			1: 'An integer between 10 and 100',
-			7: '0 = horizontal (XY plane), 1 = vertical (XZ plane), 2 = vertical (YZ plane)',
-			8: '0 = extend along X, 1 = extend along Y, 2 = extend along Z (up)',
-			9: 'The maximum height to be applied from the pixel brightness (multiplied by 16), 0 to disable.'
+			1: 'A resolution percentage between 5 and 100',
+			9: 'The maximum height to be applied from the pixel brightness (multiplied by 16), 0 to disable.',
+			10: 'Direction to place next frames: 0 = right, 1 = left, 2 = up, 3 = down, 4 = front, 5 = back',
+			11: 'Use local position for rotation (1) or start position (0).',
+			12: 'Defines the distance between subsequent frames.',
+			13: 'The callback is executed at each pixel of each frame, contains parameters ({r, g, b, a, brightness, heightValue, width, height}, {x, y, z, i}),\nYou can skip a pixel by returning false in the callback.\nYou can return an array [r, g, b, a] to replace the pixel color in the callback.'
 		}
 	},
 	'ogzeditor.cubeRoom': {
