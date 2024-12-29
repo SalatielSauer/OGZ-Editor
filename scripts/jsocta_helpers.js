@@ -1,5 +1,6 @@
-function _addGround(af) {
-	return [{x: 0, y: 0, z: 0, g: 9, af}, {x: 512, y: 0, z: 0, g: 9, af}, {x: 512, y: 512, z: 0, g: 9, af}, {x: 0, y: 512, z: 0, g: 9, af}]
+function _addGround(af, g = 9) {
+	const chunk = (1 << g);
+	return [{x: 0, y: 0, z: 0, g, af}, {x: chunk, y: 0, z: 0, g, af}, {x: chunk, y: chunk, z: 0, g, af}, {x: 0, y: chunk, z: 0, g, af}]
 }
 
 function _addCube(x, y, z, af, g = 2, vcolor = null) {
@@ -141,242 +142,315 @@ function _loopMap(max = 512, gridpower = 5, callback = ()=>{}) {
 	}
 }
 
-function _addText(text, startX, startY, startZ, textureIndex = 2, gridPower = 0, rotate = 0) {
-	const charWidth = 5; // assuming each character is 5 cubes wide
-	const charHeight = 7; // assuming each character is 7 cubes tall
-	const spacing = 1; // space between characters
+function _addText(
+	text,
+	startX,
+	startY,
+	startZ,
+	textureIndex = 2,
+	gridPower = 0,
+	yawDeg = 0,
+	pitchDeg = 0,
+	rollDeg = 0
+) {
+	const charWidth = 5;   // each character is 5 cubes wide
+	const charHeight = 7;  // each character is 7 cubes tall
+	const spacing = 1;     // horizontal space between characters
 	const verticalSpacing = 2; // vertical space between lines
-	const tabSize = 2; // equivalent to 4 characters wide
+	const tabSize = 2;     // equivalent to 4 characters wide
 	const cubeSize = Math.pow(2, gridPower);
-	const initialX = startX; // to reset startX on newline
-	const map = [];
-	let mirror = false;
+
+	// we'll treat (startX, startY, startZ) as the pivot around which to rotate
+	const pivotX = startX;
+	const pivotY = startY;
+	const pivotZ = startZ;
+
+	// precompute radians
+	const pitchRad = (pitchDeg * Math.PI) / 180;
+	const rollRad = (rollDeg * Math.PI) / 180; 
+	const yawRad = (yawDeg * Math.PI) / 180;  
+
+	// color palette (from sauer src/engine/rendertext.cpp)
+	const texColors = [
+		[0.25098, 1.0, 0.501961],
+		[0.376471, 0.627451, 1.0],
+		[1.0, 0.752941, 0.25098],
+		[1.0, 0.25098, 0.25098],
+		[0.501961, 0.501961, 0.501961],
+		[0.752941, 0.25098, 0.752941],
+		[1.0, 0.501961, 0.0],
+		[1.0, 1.0, 1.0],
+		[0.376471, 0.941176, 1.0]
+	];
+
+	// — step 1: parse out text color markers (^fN) —
+	let currentVColor = null;
+	let cleanText = '';
+	const colorMap = [];
 
 	for (let i = 0; i < text.length; i++) {
-		//let c = mirror ? ((text.length-1) - i) : i; // tofix: last letter gets lost
+		if (text[i] === '^' && text[i + 1] === 'f') {
+			const marker = text[i + 2];
+			if (marker === '~') {
+				// ^f~ = reset color
+				currentVColor = null;
+			} else {
+				// ^fN = set color N
+				const colorIndex = parseInt(marker, 10);
+				if (!isNaN(colorIndex) && texColors[colorIndex]) {
+					currentVColor = texColors[colorIndex];
+				}
+			}
+			i += 2; // skip ^fN
+		} else {
+			cleanText += text[i];
+			colorMap.push(currentVColor);
+		}
+	}
 
-		const character = mirror ? text.split('').reverse()[i] : text[i];
+	const map = [];
+
+	// — step 2: plot each character —
+	for (let i = 0; i < cleanText.length; i++) {
+		const character = cleanText[i];
+		const charColor = colorMap[i];
 
 		if (character === ' ') {
-			startX += (charWidth + spacing) * cubeSize; // move start position for space
+			// just move cursor right
+			startX += (charWidth + spacing) * cubeSize;
 			continue;
 		} else if (character === '\n') {
-			startX = initialX; // reset to beginning of line
-			startZ -= (charHeight + verticalSpacing) * cubeSize; // move down a line
+			// move to new line
+			startX = pivotX;
+			startZ -= (charHeight + verticalSpacing) * cubeSize;
 			continue;
 		} else if (character === '\t') {
-			startX += (charWidth * tabSize + spacing) * cubeSize; // move start position for tab
+			// tab
+			startX += (charWidth * tabSize + spacing) * cubeSize;
 			continue;
 		}
 
+		// get “bitmap” for the char
 		const matrix = _jsocta_text_get_matrix(character);
+
 		for (let y = 0; y < matrix.length; y++) {
 			for (let x = 0; x < matrix[y].length; x++) {
-				let matrix_block = mirror ? matrix[y][matrix[y].length - 1 - x] : matrix[y][x];
-				if (matrix_block === 1) {
-					let cube = {
-						x: startX + x * cubeSize,
-						y: startY,
-						z: startZ + (charHeight - y) * cubeSize,
+				if (matrix[y][x] === 1) {
+					// create a cube at local (x, y) in text
+					let cubeX = startX + x * cubeSize;
+					let cubeY = pivotY;  // text is flat on Y
+					let cubeZ = startZ + (charHeight - y) * cubeSize;
+
+					// apply pitch + roll + yaw rotation around pivot
+					const [rX, rY, rZ] = _rotate3D(
+						cubeX, cubeY, cubeZ,
+						pivotX, pivotY, pivotZ,
+						pitchRad, rollRad, yawRad
+					);
+
+					// build our final cube
+					const cube = {
+						x: rX,
+						y: rY,
+						z: rZ,
 						g: gridPower,
 						af: textureIndex
+					};
+
+					if (charColor) {
+						cube.vcolor = charColor;
 					}
-					switch(rotate) {
-						case 1: case 3:
-							let temp = cube.x;
-							cube.x = cube.y;
-							cube.y = temp;
-							if (rotate == 3) {
-								mirror = true;
-							}
-							break;
-						case 2:
-							mirror = true;
-							break;
-						default: 
-							break;
-					}
+
 					map.push(cube);
 				}
 			}
 		}
-		startX += (charWidth + spacing) * cubeSize; // move start position to next character
 
+		// advance cursor for the next character
+		startX += (charWidth + spacing) * cubeSize;
 	}
 
 	return map;
 }
 
-function _jsocta_text_get_matrix(char) {
-	return _jsocta_char_matrices[char.toUpperCase()] || _jsocta_char_matrices[' '];
+function _rotate3D(px, py, pz, pivotX, pivotY, pivotZ, pitchRad, rollRad, yawRad) {
+	// 1) translate relative to pivot
+	const dx = px - pivotX;
+	const dy = py - pivotY;
+	const dz = pz - pivotZ;
+
+	// 2) pitch (around X)
+	const cosP = Math.cos(pitchRad);
+	const sinP = Math.sin(pitchRad);
+
+	let rx = dx;
+	let ry = dy * cosP - dz * sinP;
+	let rz = dy * sinP + dz * cosP;
+
+	// 3) roll (around Y)
+	const cosY = Math.cos(rollRad);
+	const sinY = Math.sin(rollRad);
+
+	const rrx = rx * cosY - rz * sinY;
+	const rrz = rx * sinY + rz * cosY;
+	const rry = ry;
+
+	// 4) translate back
+	let [tx, ty, tz] = [rrx, rry, rrz];
+
+	// now do yaw
+	const cosR = Math.cos(yawRad);
+	const sinR = Math.sin(yawRad);
+
+	const frx = tx * cosR - ty * sinR;
+	const fry = tx * sinR + ty * cosR;
+	const frz = tz;
+
+	return [frx + pivotX, fry + pivotY, frz + pivotZ];
 }
 
-const _jsocta_char_matrices = {
-	" ":[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],A:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],B:[[1,1,1,0,0],[1,0,0,1,0],[1,1,1,0,0],[1,0,0,1,0],[1,0,0,1,0],[1,0,0,1,0],[1,1,1,0,0]],C:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,1],[0,1,1,1,0]],D:[[1,1,1,0,0],[1,0,0,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,1,0],[1,1,1,0,0]],E:[[1,1,1,1,1],[1,0,0,0,0],[1,1,1,0,0],[1,1,1,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],F:[[1,1,1,1,1],[1,0,0,0,0],[1,1,1,0,0],[1,1,1,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],G:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],H:[[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],I:[[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1]],J:[[0,0,0,1,1],[0,0,0,1,1],[0,0,0,1,1],[0,0,0,1,1],[1,0,0,1,1],[1,0,0,1,1],[0,1,1,0,0]],K:[[1,0,0,0,1],[1,0,0,1,0],[1,0,1,0,0],[1,1,0,0,0],[1,0,1,0,0],[1,0,0,1,0],[1,0,0,0,1]],L:[[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],M:[[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],N:[[1,0,0,0,1],[1,1,0,0,1],[1,0,1,0,1],[1,0,0,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],O:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],P:[[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],Q:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,1,1],[1,0,1,0,1],[1,1,0,1,0],[0,1,1,1,1]],R:[[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,1,0,0],[1,0,0,1,0],[1,0,0,0,1]],S:[[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[0,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,0]],T:[[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],U:[[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],V:[[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0]],W:[[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,1,0,1],[1,1,0,1,1],[1,0,0,0,1],[1,0,0,0,1]],X:[[1,0,0,0,1],[0,1,0,1,0],[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,0],[0,1,0,1,0],[1,0,0,0,1]],Y:[[1,0,0,0,1],[0,1,0,1,0],[0,1,0,1,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],Z:[[1,1,1,1,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],0:[[0,1,1,1,0],[1,0,0,0,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,0,0,1],[0,1,1,1,0]],1:[[0,0,1,0,0],[0,1,1,0,0],[1,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1]],2:[[0,1,1,1,0],[1,0,0,0,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,1,1,1,1]],3:[[0,1,1,1,0],[1,0,0,0,1],[0,0,0,0,1],[0,0,1,1,0],[0,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],4:[[0,0,0,1,0],[0,0,1,1,0],[0,1,0,1,0],[1,0,0,1,0],[1,1,1,1,1],[0,0,0,1,0],[0,0,0,1,0]],5:[[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[0,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],6:[[0,0,1,1,0],[0,1,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],7:[[1,1,1,1,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],8:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],9:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,1],[0,0,0,0,1],[0,0,0,1,0],[1,1,1,0,0]],"/": [[0,0,0,0,1],[0,0,0,1,0],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[0,1,0,0,0],[1,0,0,0,0]],"[": [[0,1,1,1,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,1,1,0]],"]": [[0,1,1,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,1,1,1,0]],")": [[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0]],"(": [[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0]],"}": [[1,1,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,0,0,0]],"{": [[0,0,0,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,1,1]],"=": [[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0]],">": [[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0]],"<": [[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0]],",": [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0]],":": [[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0]],"\"": [[0,1,0,1,0],[0,1,0,1,0],[0,1,0,1,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],";": [[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,1,0,0,0]],"*": [[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],".": [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0]],"$": [[0,0,0,1,0],[1,1,1,1,1],[1,0,1,0,0],[1,1,1,1,1],[0,0,1,0,1],[1,1,1,1,1],[0,1,0,0,0]],"_": [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,1,1,1,1]],"\`": [[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],"@": [[0,1,1,1,0],[1,0,0,0,1],[1,0,1,1,1],[1,0,1,1,0],[1,0,0,0,0],[1,1,0,0,1],[0,1,1,1,0]],"+": [[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0]],
-};
-
-function rotateCoordinates(x, y, orientation) {
-	// Rotate coordinates based on orientation (0 = 0°, 1 = 90°, 2 = 180°, 3 = 270°)
-	let angle = (orientation * Math.PI) / 2;
-	return {
-		x: x * Math.cos(angle) - y * Math.sin(angle),
-		y: x * Math.sin(angle) + y * Math.cos(angle)
-	};
-}
-
-function _addImage(index = 0, quality = 50, oX = 0, oY = 0, oZ = 0, gridpower = 1, yaw = 0, layout = 1, direction = 0, heightmap = false) {
-	// layout: 0 = horizontal (XY plane), 1 = vertical (XZ plane), 2 = vertical (YZ plane)
-	// direction: 0 = extend along X, 1 = extend along Y, 2 = extend along Z (up)
-	// heightmap: if true, creates a heightmap based on pixel brightness
-	
+function _addImage(
+	index = 0,
+	quality = 50,
+	oX = 0,
+	oY = 0,
+	oZ = 0,
+	gridpower = 1,
+	yaw = 0,
+	pitch = 0,
+	roll = 0,
+	heightmap = false,
+	direction = 0,  // 0=right,1=left,2=up,3=down,4=front,5=back
+	localPivot = true,
+	layerOffset = null,
+	callback = () => { return true }
+) {
 	assetHandler.setQuality(quality);
-	let asset = assetHandler.asset;
+	const asset = assetHandler.asset;
+	if (!asset.frames.length) {
+		throw new Error('⚠️ This script requires at least one asset, make sure to upload it and try again.');
+	}
 
-	if (asset.frames.length === 0) throw new Error('⚠️ This script requires at least one asset, make sure to upload it and try again.');
+	const frames = Array.isArray(index)
+		? asset.frames.slice(...index)
+		: typeof index === 'object'
+			? asset.frames.slice(...Object.values(index))
+			: [asset.frames[index]];
 
-	let frames = (typeof index == 'object') ? asset.frames.slice(...Object.values(index)) : [asset.frames[index]];
+	const cubeSize = 1 << gridpower;
+	const cubes = [];
 
-	let cubeSize = 1 << gridpower;
-	let cubes = [];
+	let frameOffsetW = 0;
+	let frameOffsetH = 0;
 	let frameOffset = 0;
 
-	frames.forEach((image, frameIndex) => {
-		let pixels = image.rgba;
-		let width = image.width;
-		let height = image.height;
+	const pitchRad = (pitch * Math.PI) / 180;
+	const rollRad = (roll * Math.PI) / 180;
+	const yawRad = (yaw * Math.PI) / 180;
 
-		if (frameIndex !== 0) {
-			let prevWidth = frames[frameIndex - 1].width;
-			frameOffset += prevWidth;
+	frames.forEach((image, frameIndex) => {
+		const { rgba: pixels, width, height } = image;
+
+		// if this isn’t the first frame, accumulate offset
+		if (frameIndex > 0) {
+			const prevWidth = frames[frameIndex - 1].width;
+			const prevHeight = frames[frameIndex - 1].height;
+			frameOffsetW += (layerOffset ? layerOffset : prevWidth) * cubeSize;
+			frameOffsetH += (layerOffset ? layerOffset : prevHeight) * cubeSize;
+			frameOffset  += (layerOffset ? layerOffset : 0) * cubeSize;
 		}
 
-		let frameCubes = pixels.reduce((acc, _, i) => {
-			if (i % 4 === 0) {
-				let x = (i / 4) % width;
-				let y = Math.floor((i / 4) / width);
+		// decide how frames move in space
+		let offsetX = 0, offsetY = 0, offsetZ = 0;
+		switch (direction) {
+			case 0: offsetX = frameOffsetW; break;   // right
+			case 1: offsetX = -frameOffsetW; break;  // left
+			case 2: offsetZ = frameOffsetH; break;   // up
+			case 3: offsetZ = -frameOffsetH; break;  // down
+			case 4: offsetY = frameOffset; break;    // front
+			case 5: offsetY = -frameOffset; break;   // back
+		}
 
-				// Invert Y coordinate for vertical layouts
-				if (layout === 1 || layout === 2) {
-					y = height - 1 - y;
-				}
+		// if localPivot=true, pivot around the top-left of this frame
+		// (the corner at xIndex=0,yIndex=0 => z=(height-1)*cubeSize).
+		const pivotX = localPivot ? (oX + offsetX) : oX;
+		const pivotY = localPivot ? (oY + offsetY) : oY;
+		const pivotZ = localPivot ? (oZ + offsetZ + (height - 1) * cubeSize) : oZ;
 
-				let r = pixels[i] / 255;
-				let g = pixels[i + 1] / 255;
-				let b = pixels[i + 2] / 255;
-				let a = pixels[i + 3] / 255;
+		// we'll create a local function that rotates around pivotX/pivotY/pivotZ
+		function createCube(localX, localY, localZ, r, g, b, a) {
+			const [rx, ry, rz] = _rotate3D(
+				localX,
+				localY,
+				localZ,
+				pivotX,
+				pivotY,
+				pivotZ,
+				pitchRad,
+				rollRad,
+				yawRad
+			);
+			return {
+				x: rx,
+				y: ry,
+				z: rz,
+				g: gridpower,
+				vcolor: [r, g, b],
+				valpha: a,
+				af: 1462
+			};
+		}
 
-				// Calculate brightness for heightmap
-				let brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-				let heightValue = Math.floor(brightness * ((16 * heightmap) * cubeSize));
+		const frameCubes = [];
+		for (let i = 0; i < pixels.length; i += 4) {
+			const xIndex = (i / 4) % width;
+			const yIndex = Math.floor((i / 4) / width);
 
-				// Base coordinates before transformations
-				let baseX, baseY, baseZ;
+			let r = pixels[i]     / 255;
+			let g = pixels[i + 1] / 255;
+			let b = pixels[i + 2] / 255;
+			let a = pixels[i + 3] / 255;
 
-				// Apply layout
-				switch (layout) {
-					case 0: // horizontal (XY plane)
-						baseX = x * cubeSize;
-						baseY = y * cubeSize;
-						baseZ = 0;
-						break;
-					case 1: // vertical (XZ plane)
-						baseX = x * cubeSize;
-						baseY = 0;
-						baseZ = y * cubeSize;
-						break;
-					case 2: // vertical (YZ plane)
-						baseX = 0;
-						baseY = x * cubeSize;
-						baseZ = y * cubeSize;
-						break;
-				}
+			const brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+			const heightValue = Math.floor(brightness * (16 * heightmap * cubeSize));
 
-				// Apply frame direction offset
-				switch (direction) {
-					case 0: // extend along X
-						baseX += frameOffset * cubeSize;
-						break;
-					case 1: // extend along Y
-						baseY += frameOffset * cubeSize;
-						break;
-					case 2: // extend along Z (up)
-						baseZ += frameOffset * cubeSize;
-						break;
-				}
+			// if localPivot=false, we still do the same 'top-left is bigger z' layout
+			// X increases to the right, Z decreases going downward:
+			const localX = oX + offsetX + xIndex * cubeSize;
+			const localY = oY + offsetY;
+			const localZ = oZ + offsetZ + (height - 1 - yIndex) * cubeSize;
 
-				// Apply yaw rotation (around Z axis)
-				let yawRad = (yaw * Math.PI) / 180;
-				let rotatedX = baseX * Math.cos(yawRad) - baseY * Math.sin(yawRad);
-				let rotatedY = baseX * Math.sin(yawRad) + baseY * Math.cos(yawRad);
-
-				// Generate heightmap cubes or single cube
-				let cubesToAdd = [];
+			let callbackResult = callback(
+				{ r, g, b, a, brightness, heightValue, width, height },
+				{ x: localX, y: localY, z: localZ, frameIndex}
+			);
+			
+			// "false" -> skip, "true" -> keep existing RGBA
+			// if an array is returned, always treat it as "true".
+			let condition = false;
+			if (Array.isArray(callbackResult)) {
+				condition = true;
+				[r, g, b, a] = callbackResult;
+			} else {
+				condition = callbackResult;
+			}
+	
+			if (condition) {
 				if (heightmap && heightValue > 0) {
-					// Determine heightmap direction based on layout
-					switch (layout) {
-						case 0: // horizontal (XY plane) - extend up in Z
-							for (let z = 0; z <= heightValue; z += cubeSize) {
-								cubesToAdd.push({
-									x: rotatedX + oX,
-									y: rotatedY + oY,
-									z: baseZ + z + oZ,
-									g: gridpower,
-									vcolor: [r, g, b],
-									valpha: a,
-									af: 1462
-								});
-							}
-							break;
-						case 1: // vertical (XZ plane) - extend forward in Y
-							for (let y = 0; y <= heightValue; y += cubeSize) {
-								cubesToAdd.push({
-									x: rotatedX + oX,
-									y: y + oY,
-									z: baseZ + oZ,
-									g: gridpower,
-									vcolor: [r, g, b],
-									valpha: a,
-									af: 1462
-								});
-							}
-							break;
-						case 2: // vertical (YZ plane) - extend forward in X
-							for (let x = 0; x <= heightValue; x += cubeSize) {
-								cubesToAdd.push({
-									x: x + oX,
-									y: rotatedY + oY,
-									z: baseZ + oZ,
-									g: gridpower,
-									vcolor: [r, g, b],
-									valpha: a,
-									af: 1462
-								});
-							}
-							break;
+					// extrude "upward" in +Y
+					for (let yVal = 0; yVal <= heightValue; yVal += cubeSize) {
+					frameCubes.push(createCube(localX, localY + yVal, localZ, r, g, b, a));
 					}
 				} else {
-					cubesToAdd.push({
-						x: rotatedX + oX,
-						y: rotatedY + oY,
-						z: baseZ + oZ,
-						g: gridpower,
-						vcolor: [r, g, b],
-						valpha: a,
-						af: 1462
-					});
+					frameCubes.push(createCube(localX, localY, localZ, r, g, b, a));
 				}
-
-				acc.push(...cubesToAdd);
 			}
-			return acc;
-		}, []);
-
+		}
 		cubes.push(frameCubes);
 	});
 
 	return cubes.flat();
 }
-
 
 function _addRoom(center, size, gridPower = 1, texture = 1462, vcolor = [1, 1, 1]) {
 	let cubes = [];
@@ -415,6 +489,48 @@ function _addRoom(center, size, gridPower = 1, texture = 1462, vcolor = [1, 1, 1
 		}
 	}
 	return cubes;
+}
+
+function _rotate3D(px, py, pz, pivotX, pivotY, pivotZ, pitchRad, rollRad, yawRad) {
+	const dx = px - pivotX;
+	const dy = py - pivotY;
+	const dz = pz - pivotZ;
+
+	const cosP = Math.cos(pitchRad);
+	const sinP = Math.sin(pitchRad);
+	let rx = dx;
+	let ry = dy * cosP - dz * sinP;
+	let rz = dy * sinP + dz * cosP;
+
+	const cosY = Math.cos(rollRad);
+	const sinY = Math.sin(rollRad);
+	const rrx = rx * cosY - rz * sinY;
+	const rrz = rx * sinY + rz * cosY;
+	const rry = ry;
+
+	let [tx, ty, tz] = [rrx, rry, rrz];
+
+	const cosR = Math.cos(yawRad);
+	const sinR = Math.sin(yawRad);
+	const frx = tx * cosR - ty * sinR;
+	const fry = tx * sinR + ty * cosR;
+	const frz = tz;
+
+	return [frx + pivotX, fry + pivotY, frz + pivotZ];
+}
+
+function _jsocta_text_get_matrix(char) {
+	return _jsocta_char_matrices[char] || _jsocta_char_matrices[' '];
+}
+
+const _jsocta_char_matrices = {
+" ":[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],A:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],B:[[1,1,1,0,0],[1,0,0,1,0],[1,1,1,0,0],[1,0,0,1,0],[1,0,0,1,0],[1,0,0,1,0],[1,1,1,0,0]],C:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,1],[0,1,1,1,0]],D:[[1,1,1,0,0],[1,0,0,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,1,0],[1,1,1,0,0]],E:[[1,1,1,1,1],[1,0,0,0,0],[1,1,1,0,0],[1,1,1,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],F:[[1,1,1,1,1],[1,0,0,0,0],[1,1,1,0,0],[1,1,1,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],G:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],H:[[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],I:[[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1]],J:[[0,0,0,1,1],[0,0,0,1,1],[0,0,0,1,1],[0,0,0,1,1],[1,0,0,1,1],[1,0,0,1,1],[0,1,1,0,0]],K:[[1,0,0,0,1],[1,0,0,1,0],[1,0,1,0,0],[1,1,0,0,0],[1,0,1,0,0],[1,0,0,1,0],[1,0,0,0,1]],L:[[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],M:[[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],N:[[1,0,0,0,1],[1,1,0,0,1],[1,0,1,0,1],[1,0,0,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],O:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],P:[[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],Q:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,1,1],[1,0,1,0,1],[1,1,0,1,0],[0,1,1,1,1]],R:[[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,1,0,0],[1,0,0,1,0],[1,0,0,0,1]],S:[[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[0,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,0]],T:[[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],U:[[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],V:[[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0]],W:[[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,1,0,1],[1,1,0,1,1],[1,0,0,0,1],[1,0,0,0,1]],X:[[1,0,0,0,1],[0,1,0,1,0],[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,0],[0,1,0,1,0],[1,0,0,0,1]],Y:[[1,0,0,0,1],[0,1,0,1,0],[0,1,0,1,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],Z:[[1,1,1,1,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],a:[[0,0,0,0,0],[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,1,1,1,1]],b:[[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0]],c:[[0,0,0,0,0],[0,0,0,0,0],[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[0,1,1,1,1]],d:[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,1],[0,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,1]],e:[[0,0,0,0,0],[0,0,0,0,0],[0,1,1,1,0],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,0],[0,1,1,1,1]],f:[[0,0,0,0,0],[0,0,0,0,0],[0,1,1,1,1],[0,1,0,0,0],[1,1,1,1,0],[0,1,0,0,0],[0,1,0,0,0]],g:[[0,0,0,0,0],[0,0,0,0,0],[0,1,1,1,0],[0,1,0,1,0],[0,1,1,1,1],[0,0,0,0,1],[0,1,1,1,1]],h:[[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],i:[[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,1,1,0,0],[0,0,1,0,0],[0,1,1,1,0]],j:[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,1,0],[0,0,0,0,0],[0,0,0,1,0],[0,1,0,1,0],[0,1,1,1,0]],k:[[0,0,0,0,0],[0,0,0,0,0],[1,0,0,1,0],[1,0,1,0,0],[1,1,0,0,0],[1,0,1,0,0],[1,0,0,1,0]],l:[[0,0,0,0,0],[0,0,0,0,0],[0,1,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,1,1,1,0]],m:[[0,0,0,0,0],[0,0,0,0,0],[0,1,0,1,0],[1,0,1,0,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,1,0,1]],n:[[0,0,0,0,0],[0,0,0,0,0],[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],o:[[0,0,0,0,0],[0,0,0,0,0],[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],p:[[0,0,0,0,0],[0,0,0,0,0],[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,0,0,0]],q:[[0,0,0,0,0],[0,0,0,0,0],[0,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,1],[0,0,0,0,1]],r:[[0,0,0,0,0],[0,0,0,0,0],[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],s:[[0,0,0,0,0],[0,0,0,0,0],[0,1,1,1,1],[1,0,0,0,0],[0,1,1,1,0],[0,0,0,0,1],[1,1,1,1,0]],t:[[0,0,0,0,0],[0,0,0,0,0],[0,1,0,0,0],[1,1,1,1,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,1,1,0]],u:[[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],v:[[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0]],w:[[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,1,0,1],[0,1,0,1,0]],x:[[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,0],[1,0,0,0,1]],y:[[0,0,0,0,0],[0,0,0,0,0],[0,1,0,0,1],[0,1,0,0,1],[0,0,1,1,1],[0,0,0,0,1],[0,1,1,1,0]],z:[[0,0,0,0,0],[0,0,0,0,0],[1,1,1,0,0],[0,0,0,1,0],[0,1,1,1,0],[1,0,0,0,0],[1,1,1,1,1]],0:[[0,1,1,1,0],[1,0,0,0,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,0,0,1],[0,1,1,1,0]],1:[[0,0,1,0,0],[0,1,1,0,0],[1,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1]],2:[[0,1,1,1,0],[1,0,0,0,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,1,1,1,1]],3:[[0,1,1,1,0],[1,0,0,0,1],[0,0,0,0,1],[0,0,1,1,0],[0,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],4:[[0,0,0,1,0],[0,0,1,1,0],[0,1,0,1,0],[1,0,0,1,0],[1,1,1,1,1],[0,0,0,1,0],[0,0,0,1,0]],5:[[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[0,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],6:[[0,0,1,1,0],[0,1,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],7:[[1,1,1,1,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],8:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],9:[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,1],[0,0,0,0,1],[0,0,0,1,0],[1,1,1,0,0]],"/":[[0,0,0,0,1],[0,0,0,1,0],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[0,1,0,0,0],[1,0,0,0,0]],"[":[[0,1,1,1,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,1,1,0]],"]":[[0,1,1,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,1,1,1,0]],")":[[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0]],"(":[[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0]],"}":[[1,1,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,0,0,0]],"{":[[0,0,0,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,1,1]],"=":[[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0]],">":[[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0]],"<":[[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0]],"^":[[0,0,0,0,0],[0,0,1,0,0],[0,1,0,1,0],[1,0,0,0,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],",":[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0]],":":[[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0]],"\"":[[0,1,0,1,0],[0,1,0,1,0],[0,1,0,1,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],"\`":[[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],"\'":[[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],";":[[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,1,0,0,0]],"*":[[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],".":[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0]],"$":[[0,0,0,1,0],[1,1,1,1,1],[1,0,1,0,0],[1,1,1,1,1],[0,0,1,0,1],[1,1,1,1,1],[0,1,0,0,0]],"_":[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,1,1,1,1]],"@":[[0,1,1,1,0],[1,0,0,0,1],[1,0,1,1,1],[1,0,1,1,0],[1,0,0,0,0],[1,1,0,0,1],[0,1,1,1,0]],"+":[[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0]],"-":[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],"|":[[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],"#":[[0,0,0,0,0],[0,1,0,1,0],[1,1,1,1,1],[0,1,0,1,0],[1,1,1,1,1],[0,1,0,1,0],[0,0,0,0,0]],"%":[[0,0,0,0,1],[0,1,0,1,0],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[0,1,0,1,0],[1,0,0,0,0]],"!":[[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,1,0,0]],"?":[[0,1,1,1,0],[1,0,0,0,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,1,0,0]],"~":[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,1,1,0,1],[1,0,1,1,1],[0,0,0,0,0],[0,0,0,0,0]],"&":[[0,1,1,0,0],[1,0,0,1,0],[1,0,0,1,0],[0,1,1,0,0],[1,0,1,0,1],[1,0,0,1,0],[0,1,1,0,1]]
+};
+
+const _dummy_octamap = new OctaMap({});
+
+function _getEntityType(name) {
+	return _dummy_octamap.dataTypes.entity.indexOf(name);
 }
 
 const jsocta_helpers = {

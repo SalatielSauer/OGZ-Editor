@@ -134,17 +134,51 @@ To make it easier to generate some structures, there are some predefined functio
 
   Adds a sphere to a given position.
 
-- `ogzeditor.text(text, startX, startY, startZ, texture, gridpower, rotate)`
+- `ogzeditor.text(text, startX, startY, startZ, texture, gridpower, yaw, pitch, roll)`
 
-  Adds a text to a given position.
+  Adds a text to a given position with a given rotation.
+
+  Supports color marker `^fN` where N is a number between 0 and 8, the colors are predefined based on Sauer's standard text colors:
+  	- `^f0`: green
+	- `^f1`: blue
+	- `^f3`: red
+	- `^f4`: gray
+	- `^f5`: magenta
+	- `^f6`: orange
+	- `^f7`: white
+	- `^f8`: cyan
+	- `^f~`: resets
 
 - `ogzeditor.loopmap(worldSize, gridpower, callback);`
 
-  Loops over every position with a given gridpower, returns x y z values as callback.
+  Loops over every position with a given gridpower, returns `x y z i` values as callback.
 
-- `ogzeditor.image(assetID, quality, startX, startY, startZ, gridpower, yaw, layout, direction, heightmap);`
+  Keep in mind that this will run at each position in steps based on gridpower, so gridpower 1 (2 steps) on a map of size 1024 will be quite intensive (don't try).
 
-  Adds one or more flat images with optional heightmap support; requires uploading a file using the Upload button.
+- `ogzeditor.image(assetID, quality, startX, startY, startZ, gridpower, yaw, pitch, roll, heightmap, direction, localPivot, layerOffset, callback);`
+
+	Adds one or more flat images with optional heightmap support; requires uploading a file using the Upload button.
+
+	`direction` controls where subsequent images will be added (in case of multiple images or gifs uploaded):
+  	0 = right, 1 = left, 2 = up, 3 = down, 4 = front, 5 = back.
+
+	`localPivot` is either true or false, determines whether each image will be rotated in its local space, or relative to the starting position.
+
+	`layerOffset` adds a spacing between each image, if it is 0 or false the spacing will be the width/height of the previous image (making them side by side).
+
+	`callback` the callback function is invoked for each pixel in an image. It receives an object containing various properties of the pixel. If your callback returns false, processing for that pixel is skipped; if it returns an array, those values replace the pixel’s colors.
+
+	The available pixel properties are: `{ r, g, b, a, brightness, heightValue, width, height, x, y, z, frameIndex }`.
+
+	In this example, any pixel with a heightValue of 5 or greater will use its coordinates (x, y, z) as the rgb color; all other pixels are skipped (return false):
+	```js
+	(pixel) => {
+		// if the pixel’s heightmap value is >= 5, use its position as the RGB color.
+		return (pixel.heightValue => 5)
+			? [pixel.x, pixel.y, pixel.z]
+			: false;
+	}
+	```
 
 - `ogzeditor.cubeRoom(center, size, gridpower, texture, vcolor);`
 
