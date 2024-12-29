@@ -181,15 +181,15 @@ self.onmessage = async (event) => {
 			break;
 
 		case 'jsocta_fix_mapsize':
-			if (JSOCTAHELPER.JSOCTA.mapsize >= 65536) {
+			if (JSOCTAHELPER.OBJECTS.mapvars.mapsize >= 65536) {
 				// throw warn, we reached the max mapsize
 				console.warn('Out-of-bounds cubes are beyond predefined limit of 65536 units (mapscale 16).');
 				postMessage({type: 'failed', content: 'Out-of-bounds cubes are beyond predefined limit of 65536 units (mapscale 16).'});
 				return;
 			} else {
-				JSOCTAHELPER.JSOCTA.mapsize *= 2;
+				JSOCTAHELPER.OBJECTS.mapvars.mapsize *= 2;
+				jsocta_skip_init = {state: true, reason: `Map size adjusted to ${Math.log2(JSOCTAHELPER.OBJECTS.mapvars.mapsize)}.`};
 			}
-			jsocta_skip_init = {state: true, reason: `Map size adjusted to ${Math.log2(JSOCTAHELPER.JSOCTA.mapsize)}.`};
 
 		case 'jsocta_start_process':
 			try {

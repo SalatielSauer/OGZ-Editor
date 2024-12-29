@@ -6,7 +6,7 @@
 class OctaMap {
 	constructor(object) {
 		this.mapvars = object.mapvars || { skybox: 'skyboxes/remus/sky01' };
-		this.mapsize = this.mapvars.mapsize || 1024;
+		this.mapvars['mapsize'] = this.mapvars.mapsize || 1024;
 		this.entities = object.entities || [];
 		this.textures = object.vslots || [];
 		this.octree = object.geometry || [];
@@ -35,7 +35,7 @@ class OctaMap {
 		const geometry = [... this.format_geometry()];
 		const sections = [
 			'4f4354412100000028000000',
-			this.hexUtils.IH(this.mapsize, 4),
+			this.hexUtils.IH(this.mapvars.mapsize, 4),
 			this.hexUtils.IH(this.entities.length, 4),
 			'000000000000000000000000',
 			this.hexUtils.IH(Object.keys(this.mapvars).length, 4),
@@ -269,7 +269,7 @@ class OctaMap {
 			return `03${8-cube.bk3||8}${cube.ft2||0}${8-cube.bk2||8}${cube.ft3||0}${8-cube.bk1||8}${cube.ft0||0}${8-cube.bk0||8}${cube.ft1||0}${8-cube.rt2||8}${cube.lf3||0}${8-cube.rt0||8}${cube.lf1||0}${8-cube.rt3||8}${cube.lf2||0}${8-cube.rt1||8}${cube.lf0||0}${8-cube.tp2||8}${cube.dn0||0}${8-cube.tp0||8}${cube.dn2||0}${8-cube.tp3||8}${cube.dn1||0}${8-cube.tp1||8}${cube.dn3||0}${this.hexUtils.IH(cube.lf||texture_allfaces_bind||1, 2)}${this.hexUtils.IH(cube.rt||texture_allfaces_bind||1, 2)}${this.hexUtils.IH(cube.bk||texture_allfaces_bind||1, 2)}${this.hexUtils.IH(cube.ft||texture_allfaces_bind||1, 2)}${this.hexUtils.IH(cube.dn||texture_allfaces_bind||1, 2)}${this.hexUtils.IH(cube.tp||texture_allfaces_bind||1, 2)}`;
 		}
 
-		const base_gridpower = (Math.log2(this.mapsize) | 0) - 1;
+		const base_gridpower = (Math.log2(this.mapvars.mapsize) | 0) - 1;
 		const insert = (type, x=0, y=0, z=0, gridpower) => {
 			let level_difference = base_gridpower - gridpower;
 

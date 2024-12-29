@@ -243,7 +243,7 @@ function runUserScriptAndEncode() {
 function RequestSave(requestFileHandler = false) {
 	if (!FS.fileHandle || requestFileHandler === true) {
 		FS.saveAs('', () => {
-			if (FS.fileHandle) runUserScriptAndEncode();
+			runUserScriptAndEncode();
 		});
 	} else {
 		runUserScriptAndEncode();
