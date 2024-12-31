@@ -325,7 +325,12 @@ function _addImage(
 	layerOffset = null,
 	callback = () => { return true }
 ) {
-	assetHandler.setQuality(quality);
+	if (Array.isArray(quality)) {
+		assetHandler.setQuality(...quality);
+	} else {
+		assetHandler.setQuality(quality);
+	}
+
 	const asset = assetHandler.asset;
 	if (!asset.frames.length) {
 		throw new Error('⚠️ This script requires at least one asset, make sure to upload it and try again.');
@@ -396,7 +401,6 @@ function _addImage(
 				z: rz,
 				g: gridpower,
 				vcolor: [r, g, b],
-				valpha: a,
 				af: 1462
 			};
 		}
@@ -441,7 +445,7 @@ function _addImage(
 				if (heightmap && heightValue > 0) {
 					// extrude "upward" in +Y
 					for (let yVal = 0; yVal <= heightValue; yVal += cubeSize) {
-					frameCubes.push(createCube(localX, localY + yVal, localZ, r, g, b, a));
+						frameCubes.push(createCube(localX, localY + yVal, localZ, r, g, b, a));
 					}
 				} else {
 					frameCubes.push(createCube(localX, localY, localZ, r, g, b, a));

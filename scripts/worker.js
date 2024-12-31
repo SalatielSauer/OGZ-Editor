@@ -42,7 +42,7 @@ class AssetHandler {
 				const rgbaData = new Uint8ClampedArray(gifWidth * gifHeight * 4);
 	
 				// if this is not the first frame, get the previous frame's RGBA data
-				const previousFrameData = frameIndex > 0 ? this.asset.frames[frameIndex - 1].rgba : null;
+				//const previousFrameData = frameIndex > 0 ? this.asset.frames[frameIndex - 1].rgba : null;
 	
 				for (let i = 0; i < patch.length; i += 4) {
 					const pixelIndex = i / 4;
@@ -119,7 +119,7 @@ class AssetHandler {
 		}
 	}
 
-	setQuality(percentage) {
+	setQuality(percentage, posterizeLevels) {
 		percentage = Math.min(Math.max(5, percentage), 100);
 
 		this.asset.quality = percentage;
@@ -152,6 +152,38 @@ class AssetHandler {
 				width: canvas.width,
 				height: canvas.height
 			};
+		});
+
+		if (typeof posterizeLevels !== 'undefined') {
+			this.setPosterize(posterizeLevels);
+		}
+	}
+
+	setPosterize(levels = 2) {
+		// constrain levels to a minimum of 2 to avoid division by zero or weird results.
+		const effectiveLevels = Math.max(2, levels);
+
+		// calculate the size of each color "step".
+		const stepSize = 256 / effectiveLevels;
+
+		this.asset.frames.forEach((frame) => {
+			const { rgba } = frame;
+			for (let i = 0; i < rgba.length; i += 4) {
+				let r = rgba[i];
+				let g = rgba[i + 1];
+				let b = rgba[i + 2];
+				// alpha channel is rgba[i + 3] - we leave it as is
+
+				// convert the current color to a "bucket" determined by stepSize
+				r = Math.floor(r / stepSize) * stepSize;
+				g = Math.floor(g / stepSize) * stepSize;
+				b = Math.floor(b / stepSize) * stepSize;
+
+				rgba[i] = r;
+				rgba[i + 1] = g;
+				rgba[i + 2] = b;
+				// leave rgba[i + 3] (alpha) unchanged
+			}
 		});
 	}
 }
@@ -262,7 +294,8 @@ class JSOCTA_helper {
 		const helpers = {
 			...jsocta_helpers,
 			asset: this.assetHandler.asset,
-			assetQuality: this.assetHandler.setQuality
+			assetQuality: this.assetHandler.setQuality,
+			assetReduceColors: this.assetHandler.setPosterize
 		}
 		const user_script = new Function('mapvars', 'entities', 'geometry', 'ogzeditor', text);
 		user_script(

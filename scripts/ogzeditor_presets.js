@@ -73,10 +73,13 @@ const helpers_descriptions = {
 		params: ['rgba', 'width', 'height'],
 		type: 2
 	},
-
 	'ogzeditor.assetQuality': {
 		comment: 'Sets the quality for image assets, 5 = lowest quality, 100 = highest quality (slower)',
 		params: ['quality']
+	},
+	'ogzeditor.assetReduceColors': {
+		comment: 'Posterize method to weight pixel colors and reduce the number of unique pixels (2 = low, 16 = high)',
+		params: ['level']
 	},
 	'ogzeditor.ground': {
 		comment: 'Four cubes forming a ground plane.',
@@ -106,12 +109,12 @@ const helpers_descriptions = {
 		params: ['assetID', 'quality', 'startX', 'startY', 'startZ', 'gridpower', 'yaw', 'pitch', 'roll', 'heightmap', 'direction', 'localPivot', 'layerOffset', 'callback'],
 		details: {
 			0: 'Either an integer or an array containing the [start, end] of a range (for multiple frames)',
-			1: 'A resolution percentage between 5 and 100',
+			1: 'Either an integer resolution between 5 and 100, or an array containing [resolution, posterization]\nPosterization reduces the number of unique colors in the image (2 = low, 16 = high), useful for not exceeding maxvslots.',
 			9: 'The maximum height to be applied from the pixel brightness (multiplied by 16), 0 to disable.',
 			10: 'Direction to place next frames: 0 = right, 1 = left, 2 = up, 3 = down, 4 = front, 5 = back',
 			11: 'Use local position for rotation (1) or start position (0).',
 			12: 'Defines the distance between subsequent frames.',
-			13: 'The callback is executed at each pixel of each frame, contains parameters ({r, g, b, a, brightness, heightValue, width, height}, {x, y, z, i}),\nYou can skip a pixel by returning false in the callback.\nYou can return an array [r, g, b, a] to replace the pixel color in the callback.'
+			13: 'The callback is executed at each pixel of each frame, contains parameters ({r, g, b, a, brightness, heightValue, width, height, x, y, z, pixelIndex}),\nYou can skip a pixel by returning false in the callback.\nYou can return an array [r, g, b, a] to replace the pixel color in the callback.'
 		}
 	},
 	'ogzeditor.cubeRoom': {
