@@ -159,7 +159,11 @@ To make it easier to generate some structures, there are some predefined functio
 
 	Adds one or more flat images with optional heightmap support; requires uploading a file using the Upload button.
 
-	`direction` controls where subsequent images will be added (in case of multiple images or gifs uploaded):
+	`assetID` either an integer value determining the frame index (starting at 0), or an array [start, end] determining the frame range.
+
+	`quality` either an integer value determining the image size (5 - 100), or an array [quality, posterizer] determining the image size (`quality`) and the level of color reduction (	`posterizer` reduces the amount of unique colors in the image, 2 = few unique colors, 32 = many unique colors. Very useful for keeping vslots below the maxvslots limit).
+
+	`direction` controls where subsequent frames will be added (in case of multiple frames or gifs uploaded):
   	0 = right, 1 = left, 2 = up, 3 = down, 4 = front, 5 = back.
 
 	`localPivot` is either true or false, determines whether each image will be rotated in its local space, or relative to the starting position.
@@ -174,9 +178,7 @@ To make it easier to generate some structures, there are some predefined functio
 	```js
 	(pixel) => {
 		// if the pixel’s heightmap value is >= 5, use its position as the RGB color.
-		return (pixel.heightValue => 5)
-			? [pixel.x, pixel.y, pixel.z]
-			: false;
+		return (pixel.heightValue >= 5) ? [pixel.x/512, pixel.y/512, pixel.z/512] : false;
 	}
 	```
 
@@ -191,14 +193,16 @@ To make it easier to generate some structures, there are some predefined functio
 
     Returns an array containing objects with `.rgba`, `.width` and `.height` properties. Each object is either a GIF frame or an uploaded image.
 
-- `ogzeditor.assetQuality(quality)`
+- `ogzeditor.assetQuality(quality, posterizer)`
 
-    Sets the quality for image assets, 5 = lowest quality, 100 = highest quality (slower).
+    Sets the `quality` for image assets, 5 = lowest quality, 100 = highest quality (slower).
+
+	`posterizer` reduces the amount of unique colors in the image, 2 = few unique colors, 32 = many unique colors. Very useful for keeping vslots below the maxvslots limit.
 
 <hr>
 
 # JSOCTA
-JSOCTA is what powers the OGZ Editor, it consists of classes with methods that read, format and convert the contents of a JavaScript object into a valid OGZ.
+JSOCTA powers the OGZ Editor by converting JavaScript objects into valid OGZ files.
 
 You can easily install [**mini-jsocta.js**](https://raw.githubusercontent.com/SalatielSauer/OGZ-Editor/master/scripts/mini-jsocta.js) on your own page with the script tag:<br>
 ```html
