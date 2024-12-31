@@ -79,8 +79,25 @@ class OctaMap {
 		});
 	}
 
-	format_entities() {
+	/*format_entities() {
 		return this.entities.map((entity) => `${this.hexUtils.FTH(entity.x||0)}${this.hexUtils.FTH(entity.y||0)}${this.hexUtils.FTH(entity.z||0)}${this.hexUtils.IH(entity.at0||0, 2)}${this.hexUtils.IH(entity.at1||0, 2)}${this.hexUtils.IH(entity.at2||0, 2)}${this.hexUtils.IH(entity.at3||0, 2)}${this.hexUtils.IH(entity.at4||0, 2)}${this.hexUtils.IH(entity.t||0, 2)}`);
+	}*/
+	format_entities() {
+		return this.entities.map((entity) => {
+			const coordsHex = [entity.x || 0, entity.y || 0, entity.z || 0]
+				.map((coordinate) => this.hexUtils.FTH(coordinate))
+				.join('');
+
+			const attributesHex = [entity.at0, entity.at1, entity.at2, entity.at3, entity.at4]
+				.map((attribute) => {
+					// if attribute is an object, assume it's a color like [r, g, b]
+					return this.hexUtils.IH((typeof attribute === 'object') ? this.hexUtils.CTSH(attribute) : this.hexUtils.IH(attribute || 0, 2), 2);
+				})
+				.join('');
+		
+			const typeHex = this.hexUtils.IH(entity.t || 0, 2);
+			return coordsHex + attributesHex + typeHex;
+		});
 	}
 
 	format_vslots() {
@@ -101,34 +118,36 @@ class OctaMap {
 			
 			for (let type = 0; type < dataTypes.length; type++) {
 				const slot = dataTypes[type];
-				if (layer[slot]) {
-					const args = layer[slot];
-			
-					flag |= (1 << type);
+				if (!layer[slot]) continue;
+				
+				const rawArgs = layer[slot];
+				const args = Array.isArray(rawArgs) ? rawArgs : [rawArgs];
 		
-					switch (type) {
-						case 0: // VSLOT_SHPARAM
-							data[dataIndex++] = `0100${this.hexUtils.IH(args[0].length, 2)}${this.hexUtils.STH(args[0])}${this.hexUtils.FTH(args[1] || 0)}${this.hexUtils.FTH(args[2] || 0)}${this.hexUtils.FTH(args[3] || 0)}${this.hexUtils.FTH(args[4] || 0)}`;
-							continue;
-						case 1: // VSLOT_SCALE
-							data[dataIndex++] = this.hexUtils.FTH(args[0] || 0);
-							continue;
-						case 2: // VSLOT_ROTATION
-						case 5: // VSLOT_LAYER
-							data[dataIndex++] = this.hexUtils.IH(args[0] || 0, 4);
-							continue;
-						case 3: // VSLOT_OFFSET
-							data[dataIndex++] = `${this.hexUtils.IH(args[0] || 0, 4)}${this.hexUtils.IH(args[1] || 0, 4)}`;
-							continue;
-						case 4: // VSLOT_SCROLL
-						case 6: // VSLOT_ALPHA
-							data[dataIndex++] = `${this.hexUtils.FTH(args[0] || 0)}${this.hexUtils.FTH(args[1] || 0)}`;
-							continue;
-						case 7: // VSLOT_COLOR
-							data[dataIndex++] = `${this.hexUtils.FTH(args[0] || 0)}${this.hexUtils.FTH(args[1] || 0)}${this.hexUtils.FTH(args[2] || 0)}`;
-							continue;
-					}
+				flag |= (1 << type);
+	
+				switch (type) {
+					case 0: // VSLOT_SHPARAM
+						data[dataIndex++] = `0100${this.hexUtils.IH(args[0].length, 2)}${this.hexUtils.STH(args[0])}${this.hexUtils.FTH(args[1] || 0)}${this.hexUtils.FTH(args[2] || 0)}${this.hexUtils.FTH(args[3] || 0)}${this.hexUtils.FTH(args[4] || 0)}`;
+						continue;
+					case 1: // VSLOT_SCALE
+						data[dataIndex++] = this.hexUtils.FTH(args || 0);
+						continue;
+					case 2: // VSLOT_ROTATION
+					case 5: // VSLOT_LAYER
+						data[dataIndex++] = this.hexUtils.IH(args || 0, 4);
+						continue;
+					case 3: // VSLOT_OFFSET
+						data[dataIndex++] = `${this.hexUtils.IH(args[0] || 0, 4)}${this.hexUtils.IH(args[1] || 0, 4)}`;
+						continue;
+					case 4: // VSLOT_SCROLL
+					case 6: // VSLOT_ALPHA
+						data[dataIndex++] = `${this.hexUtils.FTH(args[0] || 0)}${this.hexUtils.FTH(args[1] || 0)}`;
+						continue;
+					case 7: // VSLOT_COLOR
+						data[dataIndex++] = `${this.hexUtils.FTH(args[0] || 0)}${this.hexUtils.FTH(args[1] || 0)}${this.hexUtils.FTH(args[2] || 0)}`;
+						continue;
 				}
+				
 			}
 
 			result[i] = `${this.hexUtils.IH(flag, 4)}${data.slice(0, dataIndex).join('')}`;
@@ -337,7 +356,7 @@ class OctaMapHexUtils {
 		}
 		return result;
 	}
-	
+
 	OIH(val) {
 		const baseVal = Math.pow(2, 32);
 		const adjustedVal = baseVal - val;
@@ -360,7 +379,7 @@ class OctaMapHexUtils {
 		}
 		return result;
 	}
-	
+
 	STH(val) {
 		let hex = '';
 		for (const c of val) {
@@ -371,6 +390,7 @@ class OctaMapHexUtils {
 
 	CTI(array) {return array[0] * (256*256) + array[1] * 256 + array[2];}
 	
-	//CTH(array) {return ((1 << 24) + (array[0] << 16) + (array[1] << 8) + array[2]).toString(16).slice(1);}
-	//CTSH(array) {return "0x" + this.CTH([Math.round(array[0]/17), Math.round(array[1]/17), Math.round(array[2]/17)]).slice(1).replace(/(.{1})./g, "$1").toUpperCase();}
+	CTH(array) {return ((1 << 24) + (array[0] << 16) + (array[1] << 8) + array[2]).toString(16).slice(1);}
+	
+	CTSH(array) {return "0x" + this.CTH([Math.round(array[0]/17), Math.round(array[1]/17), Math.round(array[2]/17)]).slice(1).replace(/(.{1})./g, "$1").toUpperCase();}
 }
