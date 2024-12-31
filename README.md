@@ -31,6 +31,8 @@ https://salatielsauer.github.io/OGZ-Editor/
 
 <hr>
 
+Below is a general guide, you can find more information about JSOCTA properties in [DOCUMENTATION.md](DOCUMENTATION.md).
+
 ## Map Variables
 To apply mapvars you can use the `mapvars({})` function. Pay special attention to their types, strings must be enclosed in double quotes and RGB colors must be defined as arrays.
 ```js

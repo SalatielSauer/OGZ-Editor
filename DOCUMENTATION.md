@@ -47,7 +47,7 @@ The available entity types are:
 - `at4`: Sets fifth attribute of entity.
 
 The engine loads a maximum of 10.000 entities. Some entities (like particles) accept colors as an attribute. Example:
-```json
+```js
 // adds a magenta colored fire particle
 {x: 512, y: 512, z: 512, t: 5, at3: [255, 0, 255]}
 ```
@@ -64,7 +64,7 @@ The engine loads a maximum of 10.000 entities. Some entities (like particles) ac
 
 #### Textures
 Textures are defined using the face identifier and an index corresponding to registered textures. Example:
-```json
+```js
 // adds a cube with size 32x32 and white texture (assuming default registered textures)
 {x: 512, y: 512, z: 512, g: 5, af: 1462}
 ```
@@ -94,7 +94,7 @@ Currently the formatter does not automatically adjust corners to prevent interse
 
 #### Vslots commands
 Currently the formatter will take any given texture as a base and apply the modified vslot index to an `af`, which means that for now it is only possible to apply vcommands to individual faces by setting the indexes manually to link them to the modified slot indexes.
-```json
+```js
 // adds two 32x32 cubes, the first one adds a custom vslot color with base texture 1462, the second one uses the same created slot (1704) on a different face (assuming the default registered textures length is 1703).
 [
     {x: 512, y: 512, z: 512, g: 5, af: 1462, vcolor: [255, 0, 255]},
