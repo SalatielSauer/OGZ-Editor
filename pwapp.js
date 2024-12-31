@@ -1,4 +1,4 @@
-const version = '0.2.2';
+const version = '0.2.3';
 const cacheName = `ogzeditor-${version}`;
 const assetsToCache = [
 	'/OGZ-Editor/index.html',

@@ -6,6 +6,12 @@ const ogzeditor_presets = [
 		"file": "scripts/examples/ogzeditor_default.js"
 	},
 	{
+		"name": "Empty Map",
+		"author": "SalatielSauer",
+		"url": "https://github.com/SalatielSauer/",
+		"file": "scripts/examples/ogzeditor_emptymap.js"
+	},
+	{
 		"name": "Text 3D Rotation",
 		"author": "SalatielSauer",
 		"url": "https://github.com/SalatielSauer/",
