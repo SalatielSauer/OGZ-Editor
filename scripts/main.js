@@ -40,7 +40,7 @@ function handleWorkerFailure(data) {
 	}
 }
 
-function handleAssetDone(data) {
+/*function handleAssetDone(data) {
 	const frameCount = data.content.frames.length;
 	FS_fileStatus.update(0, `${frameCount} image${frameCount > 1 ? 's are' : ' is'} ready to be used.`, '✔️');
 
@@ -49,6 +49,32 @@ function handleAssetDone(data) {
 	assetClearButton.style.display = 'unset';
 
 	//console.log('Asset is done:', data.content);
+}*/
+
+function handleAssetDone(data) {
+	const { frames = [], json = {} } = data.content;
+	const imageCount = frames.length;
+	const jsonCount = Array.isArray(json) ? json.length : 0;
+	const parts = [];
+
+	if (imageCount) {
+		parts.push(`🖼️${imageCount} image${imageCount > 1 ? 's' : ''}`);
+	}
+
+	if (jsonCount) {
+		parts.push(`📝${jsonCount} JSON file${jsonCount > 1 ? 's' : ''}`);
+	}
+
+	if (parts.length) {
+		const assetClearButton = window['main-asset-clear-button'];
+		assetClearButton.style.display = parts.length ? 'unset' : 'none';
+		assetClearButton.textContent = `🗑️Remove: ${parts.join(' and ')}`;
+		FS_fileStatus.update(0, `${parts.join(' and ')} ready to be used.`, '✔️');
+	} else {
+		FS_fileStatus.update(0);
+	}
+
+	// console.log('Asset is done:', data.content);
 }
 
 function FS_updateFeedback(selectedFile) {
@@ -183,27 +209,31 @@ function ProcessFileStream(fileStream) {
 		return { name, author, url, body: content };
 	}
 
-	const fileReadPromises = Array.from(fileStream).map((file) => {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			
-			// determine the file type based on MIME type
-			if (file.type.startsWith('image/')) {
-				reader.onloadend = () => resolve({ type: 'image', content: reader.result });
-				reader.readAsDataURL(file);
-			} else if (file.type === 'text/javascript' || file.name.endsWith('.js')) {
-				reader.onloadend = () => resolve({ type: 'js', content: reader.result, name: file.name });
-				reader.readAsText(file);
-			} else {
-				reject(new Error(`Unsupported file type: ${file.name}`));
-			}
+		const fileReadPromises = Array.from(fileStream).map((file) => {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				
+				// determine the file type based on MIME type
+				if (file.type.startsWith('image/')) {
+					reader.onloadend = () => resolve({ type: 'image', content: reader.result });
+					reader.readAsDataURL(file);
+				} else if (file.type === 'text/javascript' || file.name.endsWith('.js')) {
+					reader.onloadend = () => resolve({ type: 'js', content: reader.result, name: file.name });
+					reader.readAsText(file);
+				} else if (file.type === 'application/json' || file.name.endsWith('.json')) {
+					reader.onloadend = () => resolve({ type: 'json', content: reader.result });
+					reader.readAsText(file);
+				} else {
+					reject(new Error(`Unsupported file type: ${file.name}`));
+				}
+			});
 		});
-	});
 
 	 Promise.all(fileReadPromises)
 		.then((files) => {
 			const imageFiles = files.filter(file => file.type === 'image').map(file => file.content);
 			const jsFiles = files.filter(file => file.type === 'js');
+			const jsonFiles = files.filter(file => file.type === 'json').map(file => file.content);
 
 			// handle JS Files: create presets
 			jsFiles.forEach((jsFile) => {
@@ -213,16 +243,19 @@ function ProcessFileStream(fileStream) {
 				saveCustomPreset({ name, author, url, body });
 			});;
 
-			// handle image files: send to worker
-			if (imageFiles.length) {
+			// handle image/json files: send to worker
+			if (imageFiles.length || jsonFiles.length) {
 				WORKER.postMessage({
 					type: 'upload',
-					content: imageFiles
+					images: imageFiles || [],
+					jsonFiles: jsonFiles || []
 				});
+
+				const totalFiles = imageFiles.length + jsonFiles.length;
+				FS_fileStatus.update(0, `${totalFiles} asset${totalFiles > 1 ? 's' : ''} uploaded.`, '✔️');
 			}
 
 			if (imageFiles.length) {
-				FS_fileStatus.update(0, `${imageFiles.length} image file${imageFiles.length > 1 ? 's' : ''} uploaded.`, '✔️');
 			}
 
 			//console.log('All files processed:', files);

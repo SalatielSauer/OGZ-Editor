@@ -2,15 +2,23 @@ importScripts('https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js', '
 
 class AssetHandler {
 	constructor() {
-		this.asset = {
-			frames: [], // array of Uint8ClampedArray (RGBA format)
-			originalFrames: [], // store original frames for reference
-			quality: 100 // default quality is 100%
-		};
+		this.clearAll();
 	}
 
 	clearAll() {
-		this.asset = {frames: [], originalFrames: [], quality: 100};
+		this.asset = {frames: [], originalFrames: [], json: []};
+	}
+
+	async processJsonFiles(jsonFiles) {
+		for (const content of jsonFiles) {
+			try {
+				const jsonObject = JSON.parse(content);
+				this.asset.json.push(jsonObject);
+			} catch (err) {
+				console.error(`Failed to parse JSON`, err);
+				postMessage({ type: 'failed', content: `Failed to parse JSON: ${err.message}` });
+			}
+		}
 	}
 
 	async processDataUrls(dataUrls) {
@@ -122,8 +130,6 @@ class AssetHandler {
 	setQuality(percentage, posterizeLevels) {
 		percentage = Math.min(Math.max(5, percentage), 100);
 
-		this.asset.quality = percentage;
-
 		const scaleFactor = percentage / 100;
 		const canvas = new OffscreenCanvas(512, 512);
 		const ctx = canvas.getContext('2d');
@@ -204,7 +210,16 @@ self.onmessage = async (event) => {
 		case 'upload':
 			postMessage({type: 'info', content: 'Processing assets..', prefix: '🖼️'});
 
-			await assetHandler.processDataUrls(data.content);
+			// if we have images, process them
+			if (data.images && data.images.length) {
+				await assetHandler.processDataUrls(data.images);
+			}
+
+			// if we have JSON files, parse them
+			if (data.jsonFiles && data.jsonFiles.length) {
+				await assetHandler.processJsonFiles(data.jsonFiles);
+			}
+
 			postMessage({type: 'done_asset', content: assetHandler.asset});
 			break;
 
@@ -283,7 +298,7 @@ class JSOCTA_helper {
 	}
 
 	execute(text) {
-		if (text.includes('.asset') && assetHandler.asset.frames.length === 0) {
+		if (text.includes('.asset') && assetHandler.asset.frames.length === 0 && assetHandler.asset.json.length === 0) {
 			postMessage({
 				type: 'failed',
 				content: '⚠️ This script requires at least one asset, make sure to upload it and try again.'

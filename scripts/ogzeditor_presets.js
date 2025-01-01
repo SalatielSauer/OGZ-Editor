@@ -70,13 +70,17 @@ const ogzeditor_presets = [
 const helpers_descriptions = {
 	'ogzeditor.asset': {
 		comment: 'Stores data of uploaded assets.',
-		params: ['frames', 'originalFrames', 'quality'],
+		params: ['json', 'frames', 'originalFrames'],
 		type: 1
 	},
-
 	'ogzeditor.asset.frames': {
-		comment: 'Stores data of images/gifs.',
+		comment: 'Stores data of uploaded images/gifs assets.',
 		params: ['rgba', 'width', 'height'],
+		type: 2
+	},
+	'ogzeditor.asset.json': {
+		comment: 'Stores data of uploaded JSON assets.',
+		params: ['objects'],
 		type: 2
 	},
 	'ogzeditor.assetQuality': {
