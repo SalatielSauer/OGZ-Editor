@@ -91,7 +91,7 @@ class OctaMap {
 			const attributesHex = [entity.at0, entity.at1, entity.at2, entity.at3, entity.at4]
 				.map((attribute) => {
 					// if attribute is an object, assume it's a color like [r, g, b]
-					return this.hexUtils.IH((typeof attribute === 'object') ? this.hexUtils.CTSH(attribute) : this.hexUtils.IH(attribute || 0, 2), 2);
+					return this.hexUtils.IH((typeof attribute === 'object') ? this.hexUtils.CTSH(attribute) : attribute, 2);
 				})
 				.join('');
 		
