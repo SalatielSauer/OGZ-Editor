@@ -203,6 +203,11 @@ To make it easier to generate some structures, there are some predefined functio
 
 <hr>
 
+## Blender 3D -> OGZ Editor
+If you intend to export objects from [Blender](https://www.blender.org/) to .ogz, you can use [Sauer-Vertex](https://gist.github.com/SalatielSauer/ba1d96e664b7accbeaae3a504acecdc0), an addon for version 2.79 and 2.80+ that exports the vertices and textures of a selected object to a .json that you can import in the OGZ Editor and save as .ogz.
+![](https://raw.githubusercontent.com/SalatielSauer/misc/master/sauervertex_8.png)
+<hr>
+
 # JSOCTA
 JSOCTA powers the OGZ Editor by converting JavaScript objects into valid OGZ files.
 

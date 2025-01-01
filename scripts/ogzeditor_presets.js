@@ -64,6 +64,12 @@ const ogzeditor_presets = [
 		"author": "SalatielSauer",
 		"url": "https://github.com/SalatielSauer/",
 		"file": "scripts/examples/ogzeditor_magiceye.js"
+	},
+	{
+		"name": "Blender JSON Importer",
+		"author": "SalatielSauer",
+		"url": "https://github.com/SalatielSauer/",
+		"file": "scripts/examples/ogzeditor_blender_importer.js"
 	}
 ]
 
