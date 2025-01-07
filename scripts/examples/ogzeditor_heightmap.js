@@ -15,4 +15,4 @@ entities([]);
 
 // draws image with index A, quality B, at position CxDxE with gridpower F.
 // G (yaw), H (pitch) and I (roll) are related to the image orientation, J is the heightmap max height.
-geometry(() => ogzeditor.image(0, 50, 512, 512, 512, 1, 0, 90, 0, 3));
+geometry(() => ogzeditor.image(0, [16, 10], 512, 512, 512, 1, 0, 90, 0, 3, 0, false));

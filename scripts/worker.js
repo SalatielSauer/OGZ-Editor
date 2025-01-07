@@ -5,9 +5,20 @@ class AssetHandler {
 		this.clearAll();
 	}
 
-	clearAll() {
-		this.asset = {frames: [], originalFrames: [], json: []};
-	}
+	clearAll(preserveLast) {
+		if (!preserveLast) {
+			this.asset = { frames: [], originalFrames: [], json: [] };
+			return;
+		}
+		
+		const keepLastOrEmpty = (arr) => (arr.length > 1 ? arr.slice(-1) : []);
+		
+		this.asset = {
+			frames: keepLastOrEmpty(this.asset.frames),
+			originalFrames: keepLastOrEmpty(this.asset.originalFrames),
+			json: keepLastOrEmpty(this.asset.json)
+		};
+	}	  
 
 	async processJsonFiles(jsonFiles) {
 		for (const content of jsonFiles) {
@@ -204,8 +215,9 @@ self.onmessage = async (event) => {
 
 	switch(data.type) {
 		case 'clear_assets':
-			assetHandler.clearAll();
-			postMessage({type: 'info', content: 'All assets have been removed.', state: 0, prefix: '🗑️'});
+			assetHandler.clearAll(data.preserveLast);
+			postMessage({type: 'info', content: `${data.preserveLast ? 'Previous' : 'All'} assets have been removed.`, state: 0, prefix: '🗑️'});
+			postMessage({type: 'done_asset', content: assetHandler.asset});
 			break;
 		case 'upload':
 			postMessage({type: 'info', content: 'Processing assets..', prefix: '🖼️'});

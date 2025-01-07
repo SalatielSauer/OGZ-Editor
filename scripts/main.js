@@ -7,6 +7,13 @@ class StatusFeedback {
 	}
 
 	update(state = 0, text = '', icon = '', buttons = []) {
+		if (arguments.length === 1 && state == 0) {
+			if (this.element.classList.contains('element-stayin')) {
+				this.element.classList.remove('element-stayin');
+				this.element.classList.add('element-fadeout');
+			}
+			return;
+		}
 		// reset animations
 		const clone = this.element.cloneNode(true);
 		this.element.parentNode.replaceChild(clone, this.element);
@@ -53,9 +60,19 @@ function handleWorkerFailure(data) {
 
 function handleAssetDone(data) {
 	const { frames = [], json = {} } = data.content;
+	const parts = [];
 	const imageCount = frames.length;
 	const jsonCount = Array.isArray(json) ? json.length : 0;
-	const parts = [];
+	let button_remove_previous = [];
+
+	if (imageCount > 1 || jsonCount > 1) {
+		button_remove_previous = [
+			{text: '🗑️Remove Previous Assets?', onclick: () => { 
+				WORKER.postMessage({ type: 'clear_assets', preserveLast: true });
+			}},
+			{text: '✖', onclick: () => { FS_fileStatus.update() }}
+		]
+	}
 
 	if (imageCount) {
 		parts.push(`🖼️${imageCount} image${imageCount > 1 ? 's' : ''}`);
@@ -69,7 +86,9 @@ function handleAssetDone(data) {
 		const assetClearButton = window['main-asset-clear-button'];
 		assetClearButton.style.display = parts.length ? 'unset' : 'none';
 		assetClearButton.textContent = `🗑️Remove: ${parts.join(' and ')}`;
-		FS_fileStatus.update(0, `${parts.join(' and ')} ready to be used.`, '✔️');
+
+		FS_fileStatus.update(imageCount > 1 || jsonCount > 1, `${parts.join(' and ')} ready to be used.<br>`, '✔️', button_remove_previous);
+	
 	} else {
 		FS_fileStatus.update(0);
 	}
@@ -570,3 +589,7 @@ window.addEventListener('paste', (event) => {
 		}
 	}
 });
+
+window.document.body.addEventListener('click', () => {
+	FS_fileStatus.update(0);
+})
