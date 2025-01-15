@@ -54,7 +54,7 @@
 		<div id="texteditor"></div>
 		<script>
 			if ('serviceWorker' in navigator) {
-				const basePath = location.href.replace(/\/[^\/]+$/, '');
+				let basePath = location.href.replace(/\/[^\/]+$/, '');
 				if (!basePath.endsWith('/')) { basePath += '/'; } // some browsers leave the last '/' out
 				navigator.serviceWorker.register(`${basePath}pwapp.js`, { scope: basePath })
 				.then(reg => {
