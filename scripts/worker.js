@@ -35,6 +35,11 @@ class AssetHandler {
 	async processDataUrls(dataUrls) {
 		if (dataUrls.length === 0) return;
 
+		// restore original frames before appending new ones
+		if (this.asset.originalFrames.length > 0) {
+			this.asset.frames = this.asset.originalFrames;
+		}
+
 		// if it's a GIF, process it with gifuct-js
 		if (dataUrls.length === 1 && dataUrls[0].startsWith('data:image/gif')) {
 			await this.processGif(dataUrls[0]);
@@ -44,7 +49,7 @@ class AssetHandler {
 		}
 
 		// save original frames for non-destructive scaling
-		this.asset.originalFrames = this.asset.frames.map(frame => ({ ...frame, rgba: new Uint8ClampedArray(frame.rgba) }));
+		this.asset.originalFrames = this.asset.frames;
 	}
 
 	async processGif(gifDataUrl) {
